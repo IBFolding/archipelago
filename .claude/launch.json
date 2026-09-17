@@ -4,8 +4,24 @@
     {
       "name": "archipelago",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "-p", "3210"],
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "-p",
+        "3210"
+      ],
       "port": 3210
+    },
+    {
+      "name": "archipelago-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "next",
+        "start",
+        "-p",
+        "3211"
+      ],
+      "port": 3211
     }
   ]
 }

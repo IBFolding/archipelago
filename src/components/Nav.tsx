@@ -6,6 +6,7 @@ import styles from './Nav.module.css';
 const LINKS = [
   { href: '#islands', label: 'The islands' },
   { href: '#land', label: 'Land' },
+  { href: '#build', label: 'Build' },
   { href: '#excursions', label: 'Excursions' },
   { href: '#tokenomics', label: 'Tokenomics' },
   { href: '#faq', label: 'FAQ' },

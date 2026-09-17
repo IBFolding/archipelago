@@ -124,7 +124,7 @@ export function Hero({ onBook }: { onBook: (islandId?: string) => void }) {
             Get $ISLAND <span aria-hidden="true">→</span>
           </a>
           <button className={styles.secondary} onClick={() => onBook()}>
-            See available land
+            See available plots
           </button>
         </div>
       </div>

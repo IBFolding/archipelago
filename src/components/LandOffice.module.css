@@ -1,0 +1,241 @@
+.section { padding: clamp(64px, 9vw, 130px) 0; background: var(--shell); }
+
+/* ---------- Island tabs ---------- */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab,
+.tabOn {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--white);
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+.tab:hover { transform: translateY(-2px); }
+.tabOn {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.tab small,
+.tabOn small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--blue);
+}
+.tabOn small { color: var(--cyan); }
+.tab strong,
+.tabOn strong { font-size: 14px; font-weight: 800; line-height: 1.15; }
+.tab em,
+.tabOn em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.tabOn em { color: rgba(255, 255, 255, 0.7); }
+
+/* ---------- Layout ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+
+/* ---------- Parcel plan ---------- */
+.planPane {
+  padding: 18px;
+  border-radius: 24px;
+  background: radial-gradient(120% 100% at 50% 45%, #7fe9dd 0%, #9fe4ef 48%, #63c6e4 100%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+}
+
+.planHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(5, 44, 68, 0.62);
+  margin-bottom: 8px;
+}
+.legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; margin-left: 6px; }
+.swBeach { background: #ffd166; }
+.swInland { background: #46b36c; }
+.swHead { background: #14764a; }
+.swTaken { background: #9aa7ae; }
+
+.plan { width: 100%; height: auto; display: block; }
+
+.parcel {
+  cursor: pointer;
+  stroke: rgba(5, 44, 68, 0.35);
+  stroke-width: 0.03;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+.parcel:hover { filter: brightness(1.12); }
+.beachfront { fill: #ffd166; }
+.inland { fill: #46b36c; }
+.headland { fill: #14764a; }
+.taken { fill: #9aa7ae; cursor: default; opacity: 0.75; }
+.dimmed { opacity: 0.22; }
+.selected {
+  stroke: #04314f;
+  stroke-width: 0.12;
+  filter: brightness(1.16);
+}
+.parcel:focus-visible { outline: none; stroke: #04314f; stroke-width: 0.12; }
+
+.planNote {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(5, 44, 68, 0.62);
+  text-align: center;
+}
+
+/* ---------- Inventory ---------- */
+.listPane { display: grid; gap: 10px; }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(5, 44, 68, 0.06);
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.seg button:hover { color: var(--ink); }
+.segOn { background: var(--white) !important; color: var(--ink) !important; box-shadow: var(--shadow-sm); }
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  gap: 4px;
+  max-height: 340px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--white);
+  border: 1px solid var(--line);
+}
+
+.row,
+.rowOn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 74px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  border-radius: 11px;
+  padding: 11px 12px;
+  background: transparent;
+  font-size: 13px;
+}
+.row:hover { background: rgba(5, 44, 68, 0.05); }
+.rowOn { background: var(--ink); color: #fff; }
+.row:disabled { cursor: default; opacity: 0.45; }
+.row b, .rowOn b { font-weight: 800; letter-spacing: 0.02em; }
+.rowTier { font-weight: 700; color: var(--ink-soft); }
+.rowOn .rowTier, .rowOn .rowPaces { color: rgba(255, 255, 255, 0.72); }
+.rowPaces { font-size: 12px; color: var(--ink-soft); }
+.rowPrice { font-weight: 800; white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .row, .rowOn { grid-template-columns: 62px 1fr auto; }
+  .rowPaces { display: none; }
+}
+
+.empty { padding: 18px; font-size: 14px; color: var(--ink-soft); }
+
+/* ---------- Selected plot ---------- */
+.detail {
+  padding: 22px;
+  border-radius: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 8px;
+}
+.detail small {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.detail h3 { margin: 0; font-family: var(--serif); font-size: 26px; line-height: 1.08; }
+.tierBlurb { margin: 0; color: var(--ink-soft); font-size: 15px; }
+.quirk {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink-soft);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 176, 32, 0.12);
+}
+
+.detailFoot {
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.detailFoot strong { font-family: var(--serif); font-size: 24px; display: block; }
+.detailFoot button {
+  border: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 14px 26px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--coral), #ef5638);
+  box-shadow: 0 12px 28px rgba(239, 86, 56, 0.32);
+  transition: transform 0.16s ease;
+}
+.detailFoot button:hover:not(:disabled) { transform: translateY(-2px); }
+.detailFoot button:disabled {
+  background: rgba(5, 44, 68, 0.12);
+  color: var(--ink-soft);
+  box-shadow: none;
+  cursor: default;
+}

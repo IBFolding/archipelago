@@ -22,9 +22,11 @@ export interface Island {
   shape: { rx: number; rz: number; rot: number };
   /** True for the five islands that form the letter; false for outliers. */
   letterform: boolean;
-  /** plot pricing shown on the booking card, in $ISLAND */
+  /**
+   * Indicative "from" price for the island. Real per-parcel prices and
+   * availability are generated in lib/plots.ts, which is the source of truth.
+   */
   fromPrice: number;
-  plotsLeft: number;
   vibe: Vibe;
 }
 
@@ -41,7 +43,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 2.5, rz: 2.2, rot: 0 },
     letterform: true,
     fromPrice: 250,
-    plotsLeft: 88,
     vibe: 'good',
   },
   {
@@ -56,7 +57,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 2.0, rz: 4.0, rot: -0.42 },
     letterform: true,
     fromPrice: 400,
-    plotsLeft: 41,
     vibe: 'good',
   },
   {
@@ -71,7 +71,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 2.0, rz: 4.0, rot: 0.42 },
     letterform: true,
     fromPrice: 520,
-    plotsLeft: 27,
     vibe: 'good',
   },
   {
@@ -86,7 +85,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 3.4, rz: 1.9, rot: -0.30 },
     letterform: true,
     fromPrice: 610,
-    plotsLeft: 19,
     vibe: 'mixed',
   },
   {
@@ -101,7 +99,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 3.4, rz: 1.9, rot: 0.30 },
     letterform: true,
     fromPrice: 1200,
-    plotsLeft: 6,
     vibe: 'good',
   },
   {
@@ -116,7 +113,6 @@ export const ISLANDS: Island[] = [
     shape: { rx: 2.6, rz: 2.4, rot: 0.2 },
     letterform: false,
     fromPrice: 90,
-    plotsLeft: 212,
     vibe: 'cursed',
   },
 ];

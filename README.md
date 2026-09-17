@@ -33,19 +33,27 @@ Other scripts: `npm run build`, `npm run typecheck`.
 ```
 src/
   app/            Next.js app router + global stylesheet
-  components/     Nav, Hero, IslandMap, Sections, BookingModal (+ CSS modules)
+  components/     Nav, Hero, IslandMap, LandOffice, Sections, BookingModal
   world/          The 3D scene
     ocean.ts        Custom water shader: swell, depth gradient, shoreline foam,
                     sun glitter, night grade, horizon haze
     geometry.ts     Procedural islands, palms, huts, docks, boats
     HeroWorld.tsx   Scene assembly, lighting, day cycle, camera rig
-  lib/content.ts  All copy + the island/excursion/treasury data model
+  lib/
+    content.ts    All copy + the island/excursion/treasury data model
+    plots.ts      Deterministic parcel inventory: rings, prices, ownership
 public/assets/    Logo and hero reference art
 ```
 
-`src/lib/content.ts` is the single source of truth. The 3D hero and the 2D map
-both read island positions from it, so the world and the map cannot drift apart.
-The game will read the same definitions.
+`src/lib/content.ts` is the single source of truth for islands. The 3D hero and
+the 2D map both read island positions from it, so the world and the map cannot
+drift apart. The game will read the same definitions.
+
+`src/lib/plots.ts` generates the parcel inventory deterministically from each
+island id: a beachfront ring, an inland ring and headland wedges, each with a
+number, size in paces, price and ownership. Every visitor sees the same plots,
+and the "N open" counts and "from" prices across the site are all derived from
+it rather than hand-written. The world will subdivide land the same way.
 
 ## Notable behaviour
 
@@ -56,6 +64,9 @@ The game will read the same definitions.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **The land office.** Pick an island, read its parcel plan, filter by
+  availability and parcel type, and claim a specific numbered plot. The hero
+  booking bar and the island map both funnel here with the island preselected.
 
 ## Land sale split
 

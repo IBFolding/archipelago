@@ -114,3 +114,6 @@ img { max-width: 100%; display: block; }
 @media (max-width: 860px) {
   .section-head { grid-template-columns: 1fr; align-items: start; }
 }
+
+/* The nav is fixed, so anchor jumps must stop short of it. */
+section[id] { scroll-margin-top: 96px; }

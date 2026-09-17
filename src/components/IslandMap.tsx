@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ISLANDS } from '@/lib/content';
+import { availableFor, fromPriceFor } from '@/lib/plots';
 import styles from './Sections.module.css';
 
 /**
@@ -9,7 +10,7 @@ import styles from './Sections.module.css';
  * 3D hero uses — so the map and the world can never drift apart. The five
  * letterform islands spell the ARC "A"; the volcano sits off on its own.
  */
-export function IslandMap({ onBook }: { onBook: (islandId?: string) => void }) {
+export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
   const [activeId, setActiveId] = useState(ISLANDS[4].id);
   const active = ISLANDS.find((i) => i.id === activeId) ?? ISLANDS[0];
 
@@ -103,7 +104,7 @@ export function IslandMap({ onBook }: { onBook: (islandId?: string) => void }) {
 
           <aside className={styles.mapCard}>
             <small>
-              Island {active.num} · {active.plotsLeft} plots left
+              Island {active.num} · {availableFor(active.id).length} plots open
             </small>
             <h3>{active.name}</h3>
             <p className={styles.tagline}>{active.tagline}</p>
@@ -116,9 +117,9 @@ export function IslandMap({ onBook }: { onBook: (islandId?: string) => void }) {
             <div className={styles.mapCardFoot}>
               <div>
                 <small>Plots from</small>
-                <strong>{active.fromPrice.toLocaleString()} $ISLAND</strong>
+                <strong>{(fromPriceFor(active.id) || active.fromPrice).toLocaleString()} $ISLAND</strong>
               </div>
-              <button onClick={() => onBook(active.id)}>Check availability</button>
+              <button onClick={() => onBook(active.id)}>See the parcels</button>
             </div>
           </aside>
         </div>

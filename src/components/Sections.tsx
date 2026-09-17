@@ -70,7 +70,7 @@ export function Arrival() {
 /** Build catalogue, dressed as villa rates. */
 export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
   return (
-    <section className={styles.section} id="land">
+    <section className={styles.section} id="build">
       <div className="shell">
         <div className="section-head">
           <div>
@@ -99,7 +99,7 @@ export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
                   <strong>{v.nightly.toLocaleString()}</strong>
                   <small>$ISLAND to build</small>
                 </div>
-                <button onClick={() => onBook()}>Reserve</button>
+                <button onClick={() => onBook()}>Find a plot</button>
               </div>
             </article>
           ))}
@@ -311,7 +311,7 @@ export function Final({ onBook }: { onBook: (islandId?: string) => void }) {
               Get $ISLAND →
             </a>
             <button className={styles.finalSecondary} onClick={() => onBook()}>
-              Check land availability
+              Browse the parcels
             </button>
           </div>
         </div>
