@@ -88,16 +88,22 @@ const TIER_MULT: Record<PlotTier, number> = {
 /* ---------------------------------------------------------------- layout -- */
 
 /** Street dimensions, in island-local units. */
-const STREET_W = 0.26;
-const AVENUE_W = 0.34;
-const SHORE = 0.94; // lots must sit inside this fraction of the shoreline
+const STREET_W = 0.34;
+const AVENUE_W = 0.38;
+const SHORE = 0.96; // lots must sit inside this fraction of the shoreline
 
-/** Frontage options, so blocks differ: cottage, standard, estate. */
-const FRONTAGES = [0.38, 0.46, 0.46, 0.58, 0.72];
-/** Depth options, paired per block row. */
-const DEPTHS = [0.54, 0.62, 0.62, 0.78];
+/**
+ * One frontage per island, picked from these. Holding it constant across the
+ * island is what makes the plat read: every lot in every block lands on the
+ * same column grid, so blocks line up instead of drifting row to row.
+ */
+const FRONTAGES = [0.4, 0.46, 0.52];
+/** Block depth varies row to row, which is where size variety comes from. */
+const DEPTHS = [0.5, 0.58, 0.66];
+/** Lots between avenues. */
+const LOTS_PER_BLOCK = 6;
 /** Reference lot area used to price everything else relative to it. */
-const REF_AREA = 0.46 * 0.62;
+const REF_AREA = 0.46 * 0.58;
 
 const STREET_NAMES = [
   'Hammock Walk',
@@ -224,98 +230,139 @@ function buildPlat(island: Island): Plat {
     return { maxN, centreN };
   };
 
-  // Lay out rows first so each block can have its own lot dimensions.
-  const rows: { z: number; lotW: number; lotD: number }[] = [];
+  // ---------------------------------------------------------------- grid --
+  // One column grid for the whole island, with avenues punched through it at
+  // fixed intervals. Every row uses these exact x positions, so lots stack
+  // into aligned blocks and the avenues fall in real gaps rather than
+  // slicing through lots.
+  const lotW = FRONTAGES[Math.floor(rand() * FRONTAGES.length)];
+  const columns: number[] = [];
+  const avenueX: number[] = [];
   {
-    let cursor = -rz - 0.4;
-    while (cursor < rz + 0.4) {
-      const lotW = FRONTAGES[Math.floor(rand() * FRONTAGES.length)];
-      const lotD = DEPTHS[Math.floor(rand() * DEPTHS.length)];
-      rows.push({ z: cursor, lotW, lotD });
-      // A block is two rows of lots backing onto each other, then a street.
-      cursor += lotD * 2 + STREET_W;
+    let x = -rx - lotW;
+    let col = 0;
+    while (x < rx + lotW) {
+      if (col > 0 && col % LOTS_PER_BLOCK === 0) {
+        avenueX.push(x);
+        x += AVENUE_W;
+      }
+      columns.push(x);
+      x += lotW;
+      col += 1;
     }
   }
 
-  const x0 = -rx - 0.5;
+  // Block rows: two rows of lots back to back, then a street.
+  const rows: { z: number; lotD: number }[] = [];
+  {
+    let z = -rz - 0.3;
+    while (z < rz + 0.3) {
+      const lotD = DEPTHS[Math.floor(rand() * DEPTHS.length)];
+      rows.push({ z, lotD });
+      z += lotD * 2 + STREET_W;
+    }
+  }
 
+  // ---------------------------------------------------------------- lots --
   let n = 0;
   let streetIdx = 0;
 
   for (let row = 0; row < rows.length; row++) {
-    const { z: blockZ, lotW: LOT_W, lotD: LOT_D } = rows[row];
-    const lotsPerBlock = LOT_W > 0.6 ? 4 : LOT_W < 0.42 ? 8 : 6;
-    // The street running along the top of this block.
-    const streetZ = blockZ - STREET_W / 2;
+    const { z: blockZ, lotD } = rows[row];
     const streetName = STREET_NAMES[streetIdx % STREET_NAMES.length];
     let streetUsed = false;
 
     for (let half = 0; half < 2; half++) {
-      const lotZ = blockZ + half * LOT_D;
+      const lotZ = blockZ + half * lotD;
 
-      let col = 0;
-      let xCursor = x0;
-      while (xCursor < rx + LOT_W) {
-        // Insert an avenue at block boundaries.
-        const sinceAvenue = col % lotsPerBlock;
-        if (col > 0 && sinceAvenue === 0) {
-          xCursor += AVENUE_W;
+      // Which columns are buildable on this row.
+      const buildable = columns.map((x) => !!fits({ x, z: lotZ, w: lotW, d: lotD }));
+
+      // Split into contiguous runs so we can drop orphans and merge estates
+      // only within a single block face.
+      let c = 0;
+      while (c < columns.length) {
+        if (!buildable[c]) {
+          c += 1;
+          continue;
+        }
+        let runEnd = c;
+        while (runEnd + 1 < columns.length && buildable[runEnd + 1]) {
+          // A run stops at an avenue: those are separate blocks.
+          const gap = columns[runEnd + 1] - (columns[runEnd] + lotW);
+          if (gap > lotW * 0.1) break;
+          runEnd += 1;
         }
 
-        const rect: LotRect = { x: xCursor, z: lotZ, w: LOT_W, d: LOT_D };
-        const hit = fits(rect);
+        const runLength = runEnd - c + 1;
+        // A single isolated lot on the edge of the island reads as a mistake,
+        // so a block face has to be at least two lots wide.
+        if (runLength >= 2) {
+          let i = c;
+          while (i <= runEnd) {
+            const r = seeded(`${island.id}:${row}:${half}:${i}`);
 
-        if (hit) {
-          const r = seeded(`${island.id}:${row}:${half}:${col}`);
-          const tier: PlotTier =
-            hit.maxN > 0.8 ? 'beachfront' : hit.centreN < 0.3 ? 'headland' : 'inland';
+            // Occasionally join two neighbouring columns into an estate lot.
+            // Merging on the grid keeps the block edges aligned.
+            const canMerge = i < runEnd && r() < 0.16;
+            const w = canMerge ? lotW * 2 : lotW;
+            const rect: LotRect = { x: columns[i], z: lotZ, w, d: lotD };
+            const hit = fits(rect);
 
-          // Bigger lots cost more, so a wide estate lot on the beach is the
-          // top of the market and a cottage lot inland is the entry point.
-          const area = (LOT_W * LOT_D) / REF_AREA;
-          const jitter = 0.88 + r() * 0.3;
-          const price =
-            Math.round((island.fromPrice * TIER_MULT[tier] * area * jitter) / 10) * 10;
+            if (hit) {
+              const tier: PlotTier =
+                hit.maxN > 0.8 ? 'beachfront' : hit.centreN < 0.3 ? 'headland' : 'inland';
 
-          const quirks = QUIRKS[tier];
-          const claimed = r() < plan.taken;
-          n += 1;
-          const label = String(n).padStart(3, '0');
+              // Bigger lots cost more, so a wide estate lot on the beach is
+              // the top of the market and a standard inland lot the entry.
+              const area = (w * lotD) / REF_AREA;
+              const jitter = 0.88 + r() * 0.3;
+              const price =
+                Math.round((island.fromPrice * TIER_MULT[tier] * area * jitter) / 10) * 10;
 
-          // Roughly one in six sold lots is back on the market, at a markup
-          // its owner is very confident about.
-          const relisted = claimed && r() < 0.17;
+              const quirks = QUIRKS[tier];
+              const claimed = r() < plan.taken;
+              n += 1;
+              const label = String(n).padStart(3, '0');
 
-          plots.push({
-            id: `${island.num}-${label}`,
-            islandId: island.id,
-            label,
-            address: `${n * 2} ${streetName}`,
-            tier,
-            rect,
-            frontage: Math.round(LOT_W * 40),
-            depth: Math.round(LOT_D * 40),
-            price,
-            claimed,
-            resale: relisted
-              ? Math.round((price * (1.25 + r() * 0.85)) / 10) * 10
-              : undefined,
-            quirk: quirks[Math.floor(r() * quirks.length)],
-          });
-          streetUsed = true;
+              // Roughly one in six sold lots is back on the market, at a
+              // markup its owner is very confident about.
+              const relisted = claimed && r() < 0.17;
+
+              plots.push({
+                id: `${island.num}-${label}`,
+                islandId: island.id,
+                label,
+                address: `${n * 2} ${streetName}`,
+                tier,
+                rect,
+                frontage: Math.round(w * 40),
+                depth: Math.round(lotD * 40),
+                price,
+                claimed,
+                resale: relisted
+                  ? Math.round((price * (1.25 + r() * 0.85)) / 10) * 10
+                  : undefined,
+                quirk: quirks[Math.floor(r() * quirks.length)],
+              });
+              streetUsed = true;
+            }
+
+            i += canMerge ? 2 : 1;
+          }
         }
 
-        xCursor += LOT_W;
-        col += 1;
+        c = runEnd + 1;
       }
     }
 
     if (streetUsed) {
+      // The street runs along the top of this block.
       streets.push({
         kind: 'street',
         name: streetName,
         x: -rx,
-        z: streetZ,
+        z: blockZ - STREET_W,
         w: rx * 2,
         d: STREET_W,
       });
@@ -323,18 +370,19 @@ function buildPlat(island: Island): Plat {
     }
   }
 
-  // North-south avenues cutting across the blocks.
-  const avenuePitch = rx / 1.6;
-  for (let ax = -rx + avenuePitch; ax < rx; ax += avenuePitch) {
+  // ------------------------------------------------------------- avenues --
+  // Drawn at the exact gaps the column grid left for them.
+  avenueX.forEach((ax, i) => {
+    if (ax < -rx || ax > rx) return;
     streets.push({
       kind: 'avenue',
-      name: AVENUE_NAMES[streets.filter((s) => s.kind === 'avenue').length % AVENUE_NAMES.length],
-      x: ax - AVENUE_W / 2,
+      name: AVENUE_NAMES[i % AVENUE_NAMES.length],
+      x: ax,
       z: -rz,
       w: AVENUE_W,
       d: rz * 2,
     });
-  }
+  });
 
   return { islandId: island.id, plots, streets, coastalR: 0.97 };
 }

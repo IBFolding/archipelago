@@ -3,8 +3,8 @@
 A vacation-booking site for a 3D island world where players buy plots of land,
 land on them with nothing, and build them out.
 
-The archipelago spells **ARC**. Three letter-sections, 18 islands, **1,124
-surveyed lots**, of which **568 are currently for sale**.
+The archipelago spells **ARC**. Three letter-sections, 18 islands, **1,161
+surveyed lots**, of which **605 are currently for sale**.
 
 - **The A** — arrivals. Every boat lands here. Six islands including the volcano
   that sits off the letterform and was not invited.

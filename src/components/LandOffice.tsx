@@ -180,10 +180,13 @@ export function LandOffice({
                     <text
                       key={`name-${i}`}
                       x={0}
-                      y={s.z + s.d * 0.72}
+                      // Sit the name on the centre line of the road, sized to
+                      // the road's own width so it can never spill onto lots.
+                      y={s.z + s.d / 2}
                       textAnchor="middle"
+                      dominantBaseline="central"
                       className={styles.streetName}
-                      style={{ fontSize: Math.min(rx, rz) * 0.085 }}
+                      style={{ fontSize: s.d * 0.46 }}
                     >
                       {s.name}
                     </text>

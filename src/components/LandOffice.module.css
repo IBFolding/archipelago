@@ -138,13 +138,16 @@
 /* roads */
 .street { fill: #fdf7ea; opacity: 0.95; }
 .streetName {
-  fill: rgba(5, 44, 68, 0.42);
+  fill: rgba(5, 44, 68, 0.38);
   font-family: var(--sans);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   pointer-events: none;
 }
+
+/* Lots sit flush on the grid; the road gaps do the separating. */
+.lot { shape-rendering: geometricPrecision; }
 
 .coastRoad {
   fill: none;
