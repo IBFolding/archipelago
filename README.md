@@ -1,5 +1,7 @@
 # ARCHipelago — $ISLAND
 
+**Live: https://ibfolding.github.io/archipelago/**
+
 A vacation-booking site for a 3D island world where players buy plots of land,
 land on them with nothing, and build them out.
 
@@ -22,10 +24,12 @@ $ISLAND on the open market and burns it.
 **Phase 1 (this repo, done): the site.** Next.js + React Three Fiber, with a
 procedural 3D archipelago hero and the full booking-styled marketing page.
 
-**Not built yet:** the playable island world (plot claiming, building,
-excursions as real missions), any backend, and the smart contracts. Nothing here
-touches a wallet, and no land or token is live. The booking flow is deliberately
-a gag — it reserves nothing.
+**Built:** the site, the land office, and the lot builder at `/build`.
+
+**Not built yet:** a backend (everything is local to your browser), excursions
+as real missions, world events actually firing, and the smart contracts.
+Nothing here touches a wallet, and no land or token is live. Claiming a lot
+reserves nothing.
 
 ## Run it
 
@@ -36,7 +40,17 @@ npm run dev
 
 Then open http://localhost:3210.
 
-Other scripts: `npm run build`, `npm run typecheck`.
+## Deploying
+
+The site is fully client-side, so it exports to static files and is served
+from GitHub Pages. Pushing to `main` runs `.github/workflows/deploy.yml`,
+which builds with `NEXT_PUBLIC_BASE_PATH=/archipelago` and publishes `out/`.
+
+To serve from a domain root instead, drop `NEXT_PUBLIC_BASE_PATH` — every
+public asset goes through `asset()` in `src/lib/paths.ts`, so the same code
+works either way.
+
+Build locally with `npm run build`; typecheck with `npm run typecheck`.
 
 ## Layout
 
