@@ -24,7 +24,8 @@ $ISLAND on the open market and burns it.
 **Phase 1 (this repo, done): the site.** Next.js + React Three Fiber, with a
 procedural 3D archipelago hero and the full booking-styled marketing page.
 
-**Built:** the site, the land office, and the lot builder at `/build`.
+**Built:** the site, the land office, the island world view at `/island`, and
+the lot builder at `/build`.
 
 **Not built yet:** a backend (everything is local to your browser), excursions
 as real missions, world events actually firing, and the smart contracts.
@@ -66,9 +67,15 @@ src/
     geometry.ts     Procedural islands, palms, huts, docks, boats
     HeroWorld.tsx   Scene assembly, lighting, day cycle, camera rig
     IslandPreview.tsx  Single island on a turntable for the islands section
+    IslandWorld.tsx    A whole island at survey scale: terrain, roads, lots,
+                       and a building on every sold one
+    buildKit.ts        The 20-piece placeable catalogue for the builder
+    BuildWorld.tsx     The lot editor scene
   lib/
     content.ts    All copy + the island/excursion/treasury data model
     plots.ts      Deterministic subdivision plats: streets, lots, prices, resales
+    neighbours.ts Generated buildings for sold lots, seeded per lot id
+    build.ts      Lot state, placement rules, persistence, sign artwork
 public/assets/    Logo and hero reference art
 ```
 
@@ -92,6 +99,17 @@ being hand-written, and the world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **The island world (`/island`).** Fly over any of the 18 islands and see the
+  actual plat in 3D: terrain, coast road, named streets, every lot, and a
+  building on every sold one. Click a lot to see its address, size and price,
+  and go straight to claiming it. Everything static is merged into one
+  vertex-coloured mesh, so a hundred-lot island costs a couple of draw calls
+  rather than several hundred.
+
+  Buildings on sold lots are **generated, not other players** — derived
+  deterministically from each lot id, so every visitor sees the same
+  neighbourhood. When a backend exists, real shared builds replace them lot by
+  lot, which means an island is never empty even at ten users.
 - **The land office.** Islands grouped by letter. Each has a real subdivision
   plat — coast road, named streets, avenues, and rectangular lots in blocks.
   Filter by land-office stock, owner resales, or everything; sort by price or

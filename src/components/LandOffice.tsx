@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ISLANDS, LETTERS } from '@/lib/content';
 import {
   TIER_BLURB,
@@ -136,7 +137,12 @@ export function LandOffice({
           {/* ------------------------------------------------ parcel plan -- */}
           <div className={styles.planPane}>
             <div className={styles.planHead}>
-              <span>{island.name} · subdivision plat</span>
+              <span>
+                {island.name} · subdivision plat
+                <Link className={styles.open3d} href={`/island/?i=${islandId}`}>
+                  Open in 3D →
+                </Link>
+              </span>
               <span className={styles.legend}>
                 <i className={styles.swBeach} /> beachfront
                 <i className={styles.swInland} /> inland

@@ -606,3 +606,19 @@
   text-transform: uppercase;
   color: var(--blue);
 }
+
+.cardActions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.flyOver {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--white);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.flyOver:hover { transform: translateY(-2px); border-color: var(--cyan); }

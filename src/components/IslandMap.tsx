@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ISLANDS, LETTERS, LETTER_ORIGIN } from '@/lib/content';
 import { USD, forSaleFor, fromPriceFor } from '@/lib/plots';
 import { IslandPreview } from '@/world/IslandPreview';
@@ -134,7 +135,12 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
                 <small>Lots from</small>
                 <strong>{USD.format(fromPriceFor(active.id) || active.fromPrice)}</strong>
               </div>
-              <button onClick={() => onBook(active.id)}>See the lots</button>
+              <div className={styles.cardActions}>
+                <Link className={styles.flyOver} href={`/island/?i=${active.id}`}>
+                  Fly over it
+                </Link>
+                <button onClick={() => onBook(active.id)}>See the lots</button>
+              </div>
             </div>
           </aside>
         </div>
