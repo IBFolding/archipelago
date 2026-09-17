@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { EXCURSIONS, FAQS, REVIEWS, TREASURY, VILLAS } from '@/lib/content';
+import { EVENTS, EXCURSIONS, FAQS, REVIEWS, TREASURY, VILLAS } from '@/lib/content';
 import styles from './Sections.module.css';
 
 const VIBE_LABEL: Record<string, string> = {
@@ -109,6 +109,55 @@ export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
   );
 }
 
+const SEVERITY_LABEL: Record<string, string> = {
+  nuisance: 'Nuisance',
+  serious: 'Serious',
+  catastrophic: 'Catastrophic',
+};
+
+/** What the island does back to you. */
+export function Events() {
+  return (
+    <section className={`${styles.section} ${styles.dark}`} id="events">
+      <div className="shell">
+        <div className="section-head">
+          <div>
+            <div className="kicker light">Conditions on the ARC</div>
+            <h2 className="section-title">
+              The island is not
+              <br />
+              a passive investment.
+            </h2>
+          </div>
+          <p className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
+            Weather, wildlife and other people arrive on their own schedule. Your build
+            either survives them or becomes a story. Both are content.
+          </p>
+        </div>
+
+        <div className={styles.eventGrid}>
+          {EVENTS.map((e) => (
+            <article key={e.id} className={`${styles.event} ${styles[e.severity]}`}>
+              <div className={styles.eventTop}>
+                <span className={styles.eventIcon} aria-hidden="true">
+                  {e.icon}
+                </span>
+                <span className={styles.sev}>{SEVERITY_LABEL[e.severity]}</span>
+              </div>
+              <small>{e.frequency}</small>
+              <h3>{e.name}</h3>
+              <p>{e.copy}</p>
+              <p className={styles.defence}>
+                <b>Defence:</b> {e.defence}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** Excursions + the day planner. */
 export function Excursions() {
   const [plan, setPlan] = useState<string[]>([]);
@@ -130,8 +179,8 @@ export function Excursions() {
             </h2>
           </div>
           <p className="lead">
-            Missions, basically. Some pay out. Some pay out and then something eats your
-            dock. One of them is not on the map and we would rather not discuss it here.
+            Missions, basically, and the reason $ISLAND exists. You buy adventures with the
+            token, not land. Some pay out. Some pay out and then something eats your dock.
           </p>
         </div>
 
@@ -154,6 +203,9 @@ export function Excursions() {
                   {e.time} · {e.duration}
                 </small>
                 <h3>{e.title}</h3>
+                <p className={styles.excPrice}>
+                  {e.price.toLocaleString()} <span>$ISLAND</span>
+                </p>
                 <p>{e.copy}</p>
 
                 <button
@@ -208,8 +260,9 @@ export function Tokenomics() {
             </h2>
           </div>
           <p className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
-            $ISLAND is the in-game currency: excursions, materials, upgrades, bar tabs. Land
-            is sold separately, and the proceeds are split like this.
+            Land is bought and sold in dollars, and can be resold by its owner at whatever
+            the market will bear. $ISLAND is the in-island currency: adventures, materials,
+            upgrades, bar tabs. Here is where every dollar of land revenue goes.
           </p>
         </div>
 
@@ -234,9 +287,9 @@ export function Tokenomics() {
           </ul>
 
           <p className={styles.folioNote}>
-            Total: 100%. No hidden resort fee, no mysterious “resort levy”, no $14 bottle of
-            water. The burn is the only thing on this island that is genuinely on fire on
-            purpose.
+            Total: 100%. Dollars come in from land, and 35 cents of each one leaves through
+            the $ISLAND burn. No hidden resort fee, no mysterious “resort levy”, no $14
+            bottle of water.
           </p>
         </div>
       </div>

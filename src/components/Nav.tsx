@@ -8,6 +8,7 @@ const LINKS = [
   { href: '#land', label: 'Land' },
   { href: '#build', label: 'Build' },
   { href: '#excursions', label: 'Excursions' },
+  { href: '#events', label: 'Events' },
   { href: '#tokenomics', label: 'Tokenomics' },
   { href: '#faq', label: 'FAQ' },
 ];

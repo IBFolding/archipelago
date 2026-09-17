@@ -3,9 +3,19 @@
 A vacation-booking site for a 3D island world where players buy plots of land,
 land on them with nothing, and build them out.
 
-The archipelago is laid out as the letter **A** — for ARC / ARChipelago — matching
-the logo: one apex island, two diagonal stroke islands, two leg islands, plus a
-volcano that sits off the letterform on the horizon.
+The archipelago spells **ARC**. Three letter-sections, 18 islands, **999 surveyed
+lots**, of which **496 are currently for sale**.
+
+- **The A** — arrivals. Every boat lands here. Six islands including the volcano
+  that sits off the letterform and was not invited.
+- **The R** — the working letter. Markets, bars, the amphitheatre. Seven islands.
+- **The C** — the quiet crescent. Retreats, sea caves, a grotto nobody discusses.
+  Five islands.
+
+**Land is bought and sold in USD** and can be resold by its owner on the
+secondary market. **$ISLAND is the in-island currency** — adventures, materials,
+upgrades, bar tabs. The link between them runs one way: 35% of land revenue buys
+$ISLAND on the open market and burns it.
 
 ## Status
 
@@ -41,7 +51,7 @@ src/
     HeroWorld.tsx   Scene assembly, lighting, day cycle, camera rig
   lib/
     content.ts    All copy + the island/excursion/treasury data model
-    plots.ts      Deterministic parcel inventory: rings, prices, ownership
+    plots.ts      Deterministic subdivision plats: streets, lots, prices, resales
 public/assets/    Logo and hero reference art
 ```
 
@@ -49,11 +59,12 @@ public/assets/    Logo and hero reference art
 the 2D map both read island positions from it, so the world and the map cannot
 drift apart. The game will read the same definitions.
 
-`src/lib/plots.ts` generates the parcel inventory deterministically from each
-island id: a beachfront ring, an inland ring and headland wedges, each with a
-number, size in paces, price and ownership. Every visitor sees the same plots,
-and the "N open" counts and "from" prices across the site are all derived from
-it rather than hand-written. The world will subdivide land the same way.
+`src/lib/plots.ts` generates each island's subdivision plat deterministically
+from its id: rows of blocks separated by named streets, cut by avenues, filled
+with rectangular lots of varying frontage and depth, clipped to the shoreline.
+Lots carry an address, size in paces, USD price, ownership and an optional
+resale listing. Every count and price on the site derives from this rather than
+being hand-written, and the world will subdivide land the same way.
 
 ## Notable behaviour
 
@@ -64,9 +75,15 @@ it rather than hand-written. The world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
-- **The land office.** Pick an island, read its parcel plan, filter by
-  availability and parcel type, and claim a specific numbered plot. The hero
-  booking bar and the island map both funnel here with the island preselected.
+- **The land office.** Islands grouped by letter. Each has a real subdivision
+  plat — coast road, named streets, avenues, and rectangular lots in blocks.
+  Filter by land-office stock, owner resales, or everything; sort by price or
+  size; claim a specific numbered address.
+- **Events.** Squalls, hurricanes, pirates, squatters, wildlife and the caldera
+  arrive on their own schedule. Each has a defence. Your build survives or
+  becomes a story.
+- **Scroll reveal.** The hero arrives over the A, then climbs and pans right as
+  you scroll until the whole ARC is in frame.
 
 ## Land sale split
 

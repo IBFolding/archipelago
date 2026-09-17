@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ISLANDS } from '@/lib/content';
-import { availableFor, fromPriceFor } from '@/lib/plots';
+import { USD, forSaleFor, fromPriceFor } from '@/lib/plots';
 import styles from './Sections.module.css';
 
 /**
@@ -104,7 +104,7 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
 
           <aside className={styles.mapCard}>
             <small>
-              Island {active.num} · {availableFor(active.id).length} plots open
+              Island {active.num} · {forSaleFor(active.id).length} lots for sale
             </small>
             <h3>{active.name}</h3>
             <p className={styles.tagline}>{active.tagline}</p>
@@ -116,8 +116,8 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
             </ul>
             <div className={styles.mapCardFoot}>
               <div>
-                <small>Plots from</small>
-                <strong>{(fromPriceFor(active.id) || active.fromPrice).toLocaleString()} $ISLAND</strong>
+                <small>Lots from</small>
+                <strong>{USD.format(fromPriceFor(active.id) || active.fromPrice)}</strong>
               </div>
               <button onClick={() => onBook(active.id)}>See the parcels</button>
             </div>

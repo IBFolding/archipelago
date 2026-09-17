@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ISLANDS } from '@/lib/content';
-import { TIER_LABEL, availableFor, type Plot } from '@/lib/plots';
+import { TIER_LABEL, USD, askingPrice, forSaleFor, type Plot } from '@/lib/plots';
 import styles from './BookingModal.module.css';
 
 export interface BookingState {
@@ -65,8 +65,9 @@ export function BookingModal({
         <div className="kicker">Absolutely not Expedia</div>
         <h2 id="booking-title">Reserve a plot.</h2>
         <p className={styles.blurb}>
-          Land is not live yet. Nothing is charged, no wallet is touched, and no parcel is
-          actually held. This is the queue for when the boats start running.
+          Land is not live yet. Nothing is charged, no card or wallet is touched, and no lot
+          is actually held. Land sells in dollars when the boats start running; $ISLAND is
+          for what you do once you are here.
         </p>
 
         <div className={styles.form}>
@@ -89,7 +90,7 @@ export function BookingModal({
             <select value={state.plot?.id ?? 'any'} disabled>
               {state.plot ? (
                 <option value={state.plot.id}>
-                  {state.plot.id} · {TIER_LABEL[state.plot.tier]} · {state.plot.paces} paces
+                  {state.plot.address} · {TIER_LABEL[state.plot.tier]}
                 </option>
               ) : (
                 <option value="any">Whatever is left, honestly</option>
@@ -118,13 +119,13 @@ export function BookingModal({
         <div className={styles.summary}>
           <div>
             <small>
-              {state.plot ? `Plot ${state.plot.id} · ${island.name}` : `${island.name} · plots from`}
+              {state.plot ? `${state.plot.address} · ${island.name}` : `${island.name} · lots from`}
             </small>
             <strong>
-              {(state.plot?.price ?? island.fromPrice).toLocaleString()} $ISLAND
+              {USD.format(state.plot ? askingPrice(state.plot) : island.fromPrice)}
             </strong>
           </div>
-          <span>{availableFor(islandId).length} open</span>
+          <span>{forSaleFor(islandId).length} for sale</span>
         </div>
 
         <button className={styles.confirm} onClick={() => setConfirmed(true)}>

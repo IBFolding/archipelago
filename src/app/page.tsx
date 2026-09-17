@@ -4,7 +4,16 @@ import { useCallback, useState } from 'react';
 import { Nav } from '@/components/Nav';
 import { Hero } from '@/components/Hero';
 import { IslandMap } from '@/components/IslandMap';
-import { Arrival, Build, Excursions, Faq, Final, Reviews, Tokenomics } from '@/components/Sections';
+import {
+  Arrival,
+  Build,
+  Events,
+  Excursions,
+  Faq,
+  Final,
+  Reviews,
+  Tokenomics,
+} from '@/components/Sections';
 import { BookingModal, type BookingState } from '@/components/BookingModal';
 import { LandOffice } from '@/components/LandOffice';
 import type { Plot } from '@/lib/plots';
@@ -35,6 +44,7 @@ export default function Page() {
         <LandOffice onClaim={claimPlot} focusIslandId={focusIslandId} />
         <Build onBook={showLand} />
         <Excursions />
+        <Events />
         <Tokenomics />
         <Reviews />
         <Faq />

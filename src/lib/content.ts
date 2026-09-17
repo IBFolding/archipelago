@@ -5,6 +5,33 @@
 
 export type Vibe = 'good' | 'mixed' | 'cursed';
 
+/** The archipelago spells ARC. Each letter is its own section of islands. */
+export type Letter = 'A' | 'R' | 'C';
+
+/** World-space x offset of each letter, so the three read left to right. */
+export const LETTER_ORIGIN: Record<Letter, number> = { A: 0, R: 42, C: 77 };
+
+export const LETTERS: { id: Letter; name: string; blurb: string }[] = [
+  {
+    id: 'A',
+    name: 'The A',
+    blurb:
+      'Arrivals. Every boat lands here, so every mistake starts here. Tourist-facing, loud at the dock, cheap at the edges.',
+  },
+  {
+    id: 'R',
+    name: 'The R',
+    blurb:
+      'The working letter. Markets, bars, the amphitheatre, and whoever is running a business out of a shipping container this month.',
+  },
+  {
+    id: 'C',
+    name: 'The C',
+    blurb:
+      'The quiet crescent. Retreats, weird tea, a hollow nobody will give you directions to. People come here to disappear tastefully.',
+  },
+];
+
 export interface Island {
   id: string;
   num: string;
@@ -12,110 +39,316 @@ export interface Island {
   tagline: string;
   blurb: string;
   perks: string[];
+  /** Which letter of ARC this island belongs to. */
+  letter: Letter;
   /**
-   * World-space position (x, z). The five main islands are laid out so the
-   * archipelago reads as the ARCHipelago "A" from above, matching the logo:
-   * one apex island, two diagonal stroke islands, two leg islands.
+   * Position (x, z). In ISLAND_DEFS this is local to the island's letter; the
+   * exported ISLANDS array adds the letter origin to give world space.
    */
   pos: [number, number];
   /** Footprint of the landmass: radii along x/z plus a yaw, in radians. */
   shape: { rx: number; rz: number; rot: number };
-  /** True for the five islands that form the letter; false for outliers. */
+  /** True for islands that draw the letter; false for outliers like the volcano. */
   letterform: boolean;
   /**
-   * Indicative "from" price for the island. Real per-parcel prices and
-   * availability are generated in lib/plots.ts, which is the source of truth.
+   * Indicative "from" price for the island, in USD. Land is sold for dollars;
+   * $ISLAND is the in-island currency and is never used to buy land. Real
+   * per-lot prices and availability come from lib/plots.ts.
    */
   fromPrice: number;
   vibe: Vibe;
 }
 
-export const ISLANDS: Island[] = [
+const ISLAND_DEFS: Island[] = [
   {
     id: 'arrivals',
+    letter: 'A',
     num: '01',
     name: 'Arrivals Cay',
     tagline: 'Where everybody lands with one bag and zero plan.',
     blurb:
       'The dock, the welcome rum, the guy who tells you about his portfolio before he tells you his name. Your first plot is cheap here because the neighbours are, frankly, a lot.',
     perks: ['🛬 Boat every 20 min', '🥤 Welcome drink', '🧍 Aggressive small talk'],
-    pos: [0, -10.5],
-    shape: { rx: 2.5, rz: 2.2, rot: 0 },
+    pos: [0.0, -15.75],
+    shape: { rx: 3.75, rz: 3.3, rot: 0 },
     letterform: true,
     fromPrice: 250,
     vibe: 'good',
   },
   {
     id: 'nap',
+    letter: 'A',
     num: '02',
     name: 'Nap Atoll',
     tagline: 'Hammocks, private coves, and a strict ban on the phrase "quick sync".',
     blurb:
       'Signal is suspiciously weak. Time moves differently. People have gone in for an afternoon and come out with a beard and a new philosophy.',
     perks: ['😴 Elite napping', '🌴 Quiet beach', '📵 Suspiciously weak signal'],
-    pos: [-5.4, -2.6],
-    shape: { rx: 2.0, rz: 4.0, rot: -0.42 },
+    pos: [-8.1, -3.9],
+    shape: { rx: 3.0, rz: 6.0, rot: -0.42 },
     letterform: true,
     fromPrice: 400,
     vibe: 'good',
   },
   {
     id: 'snack',
+    letter: 'A',
     num: '03',
     name: 'Snack Key',
     tagline: 'Open-air kitchens and a bakery that treats 2 PM like breakfast.',
     blurb:
       'Ridiculous fruit. Late-night fries. A grill that has been on since 2019. Build here and you will never cook again, but you will develop opinions about mango.',
     perks: ['🍟 Emergency fries', '🥐 Late breakfast', '🥭 Fruit with main-character energy'],
-    pos: [5.4, -2.6],
-    shape: { rx: 2.0, rz: 4.0, rot: 0.42 },
+    pos: [8.1, -3.9],
+    shape: { rx: 3.0, rz: 6.0, rot: 0.42 },
     letterform: true,
     fromPrice: 520,
     vibe: 'good',
   },
   {
     id: 'boat',
+    letter: 'A',
     num: '04',
     name: 'Boat People Cay',
     tagline: 'Sail somewhere, anchor nowhere, return with a better hat.',
     blurb:
       'The marina island. Everyone here owns a boat and a strong opinion about knots. Also: the reef drops off fast, and the reef has residents.',
     perks: ['⛵ Tiny boats', '🤿 Reef trips', '🦈 Occasional incident'],
-    pos: [-10.4, 5.6],
-    shape: { rx: 3.4, rz: 1.9, rot: -0.30 },
+    pos: [-15.6, 8.4],
+    shape: { rx: 5.1, rz: 2.85, rot: -0.30 },
     letterform: true,
     fromPrice: 610,
     vibe: 'mixed',
   },
   {
     id: 'main',
+    letter: 'A',
     num: '05',
     name: 'Main Character Island',
     tagline: 'The postcard. Long beach, absurd sunsets, temporarily fixes your personality.',
     blurb:
       'Beachfront is beachfront. The golden-hour bar is the single most photographed structure in the archipelago. Plots here are the reason the buyback exists.',
     perks: ['🌅 Sunset beach', '📸 Aggressive scenery', '🍸 Golden-hour bar'],
-    pos: [10.4, 5.6],
-    shape: { rx: 3.4, rz: 1.9, rot: 0.30 },
+    pos: [15.6, 8.4],
+    shape: { rx: 5.1, rz: 2.85, rot: 0.30 },
     letterform: true,
     fromPrice: 1200,
     vibe: 'good',
   },
   {
     id: 'smoking',
+    letter: 'A',
     num: '06',
     name: 'The Smoking Caldera',
     tagline: 'Technically an island. Legally a warning.',
     blurb:
       'Cheapest dirt in the archipelago, for reasons that become obvious around 3 AM. Rich soil, unbeatable views, non-zero lava. The locals call it "the opportunity".',
     perks: ['🌋 Non-zero lava', '💎 Absurd soil', '📉 Priced accordingly'],
-    pos: [16.5, -9.5],
-    shape: { rx: 2.6, rz: 2.4, rot: 0.2 },
+    pos: [-27.0, -13.5],
+    shape: { rx: 3.9, rz: 3.6, rot: 0.2 },
     letterform: false,
     fromPrice: 90,
     vibe: 'cursed',
   },
+
+  /* ------------------------------------------------------------ the R -- */
+  {
+    id: 'neon',
+    letter: 'R',
+    num: '07',
+    name: 'Neon Spit',
+    tagline: 'The top of the stem. Nothing here opens before four in the afternoon.',
+    blurb:
+      'A thin strip of bars stacked shoulder to shoulder, all of them insisting they are the original. The light is pink, the floor is tacky, and nobody has seen a sunrise on purpose.',
+    perks: ['🍸 Bars, mostly', '🎶 Someone is DJing', '🌃 Opens at four'],
+    pos: [-10, -12],
+    shape: { rx: 2.6, rz: 3.6, rot: 0 },
+    letterform: true,
+    fromPrice: 700,
+    vibe: 'mixed',
+  },
+  {
+    id: 'market',
+    letter: 'R',
+    num: '08',
+    name: 'Market Mile',
+    tagline: 'The middle of the stem, and the only place on the ARC that actually works.',
+    blurb:
+      'Fish, fruit, rope, rum, counterfeit sunglasses, and a man who will sell you a boat he does not own. If your build needs materials, it came through here first.',
+    perks: ['📦 Materials', '🐟 Fish at dawn', '🕶️ Legally distinct sunglasses'],
+    pos: [-10, -3],
+    shape: { rx: 2.6, rz: 3.6, rot: 0 },
+    letterform: true,
+    fromPrice: 880,
+    vibe: 'good',
+  },
+  {
+    id: 'lastcall',
+    letter: 'R',
+    num: '09',
+    name: 'Last Call Point',
+    tagline: 'The bottom of the stem, where the night goes to end badly.',
+    blurb:
+      'One pier, one bar, one bell. When the bell goes, the boats stop and you are a resident of this island until morning whether you planned to be or not.',
+    perks: ['🔔 The bell', '🚤 Last boat', '😵 Regret, catered'],
+    pos: [-10, 6],
+    shape: { rx: 2.6, rz: 3.6, rot: 0 },
+    letterform: true,
+    fromPrice: 540,
+    vibe: 'mixed',
+  },
+  {
+    id: 'rooftop',
+    letter: 'R',
+    num: '10',
+    name: 'Rooftop Reef',
+    tagline: 'The top bar of the R. Everything is built upward because there is no room outward.',
+    blurb:
+      'The most vertical island in the archipelago. Stacked decks, rope bridges between roofs, and a reef directly underneath that people keep diving into from the third floor.',
+    perks: ['🏗️ Build upward', '🌉 Rope bridges', '🤕 Third-floor diving'],
+    pos: [-1, -14],
+    shape: { rx: 4.2, rz: 2.4, rot: 0 },
+    letterform: true,
+    fromPrice: 960,
+    vibe: 'mixed',
+  },
+  {
+    id: 'bowl',
+    letter: 'R',
+    num: '11',
+    name: 'The Bowl',
+    tagline: 'A natural amphitheatre that the island has decided is a venue.',
+    blurb:
+      'Curved rock, absurd acoustics, and a crowd every night that nobody organised. Own a lot on the rim and you are effectively selling tickets to your own porch.',
+    perks: ['🎤 Absurd acoustics', '🎟️ Porch economics', '📣 Never quiet'],
+    pos: [5, -9],
+    shape: { rx: 2.4, rz: 3.4, rot: 0 },
+    letterform: true,
+    fromPrice: 1050,
+    vibe: 'good',
+  },
+  {
+    id: 'waist',
+    letter: 'R',
+    num: '12',
+    name: 'Waist Deep',
+    tagline: 'The crossbar. Half of it is underwater at high tide and everyone is fine with this.',
+    blurb:
+      'Stilt houses, wooden walkways, and a tide chart on the wall of every building. Cheapest lots on the R, for reasons that arrive twice a day.',
+    perks: ['🪵 Stilt houses', '🌊 Twice-daily tide', '💸 Priced for it'],
+    pos: [-1, -4],
+    shape: { rx: 4.0, rz: 2.3, rot: 0 },
+    letterform: true,
+    fromPrice: 380,
+    vibe: 'mixed',
+  },
+  {
+    id: 'kickstand',
+    letter: 'R',
+    num: '13',
+    name: 'Kickstand Cay',
+    tagline: "The R's leg, kicked out at an angle nobody has explained.",
+    blurb:
+      'A long diagonal spit pointing away from everything. Workshops, half-finished boats, and the only people on the ARC who own tools and know where they are.',
+    perks: ['🔧 Workshops', '⛵ Half-built boats', '🧰 Actual tools'],
+    pos: [4, 6],
+    shape: { rx: 2.6, rz: 4.6, rot: 0.55 },
+    letterform: true,
+    fromPrice: 620,
+    vibe: 'good',
+  },
+
+  /* ------------------------------------------------------------ the C -- */
+  {
+    id: 'crescent',
+    letter: 'C',
+    num: '14',
+    name: 'Crescent Point',
+    tagline: 'The top of the C, and the first quiet you have had in days.',
+    blurb:
+      'The noise from the R stops somewhere in the channel and does not make it here. Long pale beach, low buildings, and an unspoken rule about volume.',
+    perks: ['🤫 Enforced calm', '🏖️ Pale beach', '📉 Low buildings'],
+    pos: [2, -13],
+    shape: { rx: 4.2, rz: 2.4, rot: 0 },
+    letterform: true,
+    fromPrice: 820,
+    vibe: 'good',
+  },
+  {
+    id: 'silent',
+    letter: 'C',
+    num: '15',
+    name: 'Silent Bay',
+    tagline: 'A retreat island. People arrive talkative and leave insufferable.',
+    blurb:
+      'Tea ceremonies, breathing workshops, and one guide who will take you into the forest and hand you a cup without explaining anything. Come back different.',
+    perks: ['🍄 Forest tea', '🧘 Breathing, apparently', '🌫️ Morning fog'],
+    pos: [-6, -9],
+    shape: { rx: 2.6, rz: 3.4, rot: -0.5 },
+    letterform: true,
+    fromPrice: 760,
+    vibe: 'mixed',
+  },
+  {
+    id: 'hollow',
+    letter: 'C',
+    num: '16',
+    name: 'The Hollow',
+    tagline: 'There is a grotto here. Nobody will give you directions to it.',
+    blurb:
+      'The spine of the C, honeycombed with sea caves. Locals are polite, helpful, and completely unwilling to discuss what is behind the waterfall on the west side.',
+    perks: ['🕳️ Sea caves', '💧 The waterfall', '🤐 Nobody will say'],
+    pos: [-9, -2],
+    shape: { rx: 2.4, rz: 3.6, rot: 0 },
+    letterform: true,
+    fromPrice: 690,
+    vibe: 'mixed',
+  },
+  {
+    id: 'moonrise',
+    letter: 'C',
+    num: '17',
+    name: 'Moonrise Flats',
+    tagline: 'Tidal flats that go silver at night and swallow anything you leave out.',
+    blurb:
+      'Enormous shallow flats, walkable at low tide, extremely not walkable otherwise. The moonrise here is the second most photographed thing in the archipelago and it knows it.',
+    perks: ['🌕 Silver at night', '🚶 Low-tide walking', '🩴 Lost footwear'],
+    pos: [-6, 5],
+    shape: { rx: 2.6, rz: 3.4, rot: 0.5 },
+    letterform: true,
+    fromPrice: 580,
+    vibe: 'mixed',
+  },
+  {
+    id: 'lastlight',
+    letter: 'C',
+    num: '18',
+    name: 'Last Light Cay',
+    tagline: 'The bottom tip of the C. The final island before open water.',
+    blurb:
+      'A lighthouse, a bar attached to the lighthouse, and a view of absolutely nothing in three directions. The last sunset on the ARC happens here about forty seconds after everywhere else.',
+    perks: ['🗼 Working lighthouse', '🌇 Latest sunset', '🌊 Open water'],
+    pos: [2, 8],
+    shape: { rx: 4.2, rz: 2.4, rot: 0 },
+    letterform: true,
+    fromPrice: 900,
+    vibe: 'good',
+  },
 ];
+
+/**
+ * Islands in world space. Letter-local coordinates get their letter's origin
+ * added, so the three sections read as ARC from left to right.
+ */
+export const ISLANDS: Island[] = ISLAND_DEFS.map((d) => ({
+  ...d,
+  pos: [d.pos[0] + LETTER_ORIGIN[d.letter], d.pos[1]] as [number, number],
+}));
+
+export function islandsOfLetter(letter: Letter): Island[] {
+  return ISLANDS.filter((i) => i.letter === letter);
+}
+
 
 export interface Excursion {
   id: string;
@@ -125,6 +358,8 @@ export interface Excursion {
   copy: string;
   icon: string;
   vibe: Vibe;
+  /** Cost in $ISLAND. Adventures are what the token is for. */
+  price: number;
   /** what the concierge will not put in the brochure */
   smallPrint: string;
 }
@@ -132,6 +367,7 @@ export interface Excursion {
 export const EXCURSIONS: Excursion[] = [
   {
     id: 'yacht',
+    price: 450,
     time: '11:00',
     duration: '3 hrs',
     title: 'Yacht to Nowhere',
@@ -142,6 +378,7 @@ export const EXCURSIONS: Excursion[] = [
   },
   {
     id: 'reef',
+    price: 280,
     time: '09:30',
     duration: '2 hrs',
     title: 'Reef With Benefits',
@@ -152,6 +389,7 @@ export const EXCURSIONS: Excursion[] = [
   },
   {
     id: 'grotto',
+    price: 900,
     time: 'Unlisted',
     duration: '???',
     title: 'The Grotto Nobody Mentions',
@@ -162,6 +400,7 @@ export const EXCURSIONS: Excursion[] = [
   },
   {
     id: 'mushroom',
+    price: 320,
     time: '16:00',
     duration: 'Subjective',
     title: 'Guided Forest Tea Ceremony',
@@ -172,6 +411,7 @@ export const EXCURSIONS: Excursion[] = [
   },
   {
     id: 'float',
+    price: 60,
     time: 'All day',
     duration: 'Very hard',
     title: 'Competitive Floating',
@@ -182,6 +422,7 @@ export const EXCURSIONS: Excursion[] = [
   },
   {
     id: 'caldera',
+    price: 640,
     time: '05:00',
     duration: '90 min',
     title: 'Sunrise Caldera Hike',
@@ -189,6 +430,77 @@ export const EXCURSIONS: Excursion[] = [
     icon: '🌋',
     vibe: 'cursed',
     smallPrint: 'The ground doing something is included in the price and is not refundable.',
+  },
+];
+
+export interface IslandEvent {
+  id: string;
+  icon: string;
+  name: string;
+  frequency: string;
+  copy: string;
+  defence: string;
+  severity: 'nuisance' | 'serious' | 'catastrophic';
+}
+
+/**
+ * The island is not a passive asset. Events roll across the ARC on a schedule
+ * nobody controls, and your build either survives them or does not.
+ */
+export const EVENTS: IslandEvent[] = [
+  {
+    id: 'storm',
+    icon: '\u26c8\ufe0f',
+    name: 'Squall season',
+    frequency: 'Weekly-ish',
+    copy: 'Roofs leave. Fences leave. Anything you did not tie down is now on a different island and legally someone else\u2019s problem.',
+    defence: 'Build sturdier roofing, or accept that your furniture is a gift to Snack Key.',
+    severity: 'nuisance',
+  },
+  {
+    id: 'hurricane',
+    icon: '\ud83c\udf00',
+    name: 'The big one',
+    frequency: 'Rare, announced',
+    copy: 'A named hurricane crosses the ARC. Everyone gets warning. Nobody is ever ready. Whole streets go back to sand.',
+    defence: 'Storm shutters, a seawall, and friends who help you rebuild. Rebuilt lots come back tougher.',
+    severity: 'catastrophic',
+  },
+  {
+    id: 'pirates',
+    icon: '\ud83c\udff4\u200d\u2620\ufe0f',
+    name: 'Pirates',
+    frequency: 'Opportunistic',
+    copy: 'They come for stock, not structures. If your lot is holding materials or takings, it is a target, and they know which docks are unwatched.',
+    defence: 'Lock-ups, a watchtower, or a neighbour who owes you one. Defended raids pay out.',
+    severity: 'serious',
+  },
+  {
+    id: 'squatters',
+    icon: '\ud83c\udfd5\ufe0f',
+    name: 'Squatters',
+    frequency: 'On idle land',
+    copy: 'Leave a lot undeveloped long enough and someone moves onto it, builds something worse than you would have, and becomes extremely hard to remove politely.',
+    defence: 'Build something. Anything. A fence counts. Barely.',
+    severity: 'nuisance',
+  },
+  {
+    id: 'wildlife',
+    icon: '\ud83e\udd88',
+    name: 'The wildlife',
+    frequency: 'Constantly',
+    copy: 'Sharks at the dock, piranhas in the wrong lagoon, boar in the treeline, and one crab that has learned how doors work.',
+    defence: 'Nets, lights and not swimming at dusk. The crab is unsolved.',
+    severity: 'serious',
+  },
+  {
+    id: 'eruption',
+    icon: '\ud83c\udf0b',
+    name: 'The caldera stirs',
+    frequency: 'Seasonal',
+    copy: 'Ash first, then the glow, then the part where the cheapest land in the archipelago justifies its price.',
+    defence: 'Nothing. That is the deal you made when you bought it that cheap.',
+    severity: 'catastrophic',
   },
 ];
 
@@ -240,7 +552,8 @@ export const TREASURY: TreasuryLine[] = [
   {
     pct: 35,
     label: 'Buyback & burn',
-    detail: 'Every plot sold buys $ISLAND off the market and sets it on fire on the beach.',
+    detail:
+      'Land sells in dollars. 35 cents of every dollar buys $ISLAND on the open market and burns it.',
     color: 'var(--coral)',
   },
   {

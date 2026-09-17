@@ -3,7 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { ISLANDS } from '@/lib/content';
+import { ISLANDS, LETTER_ORIGIN } from '@/lib/content';
 import { buildIsland, sailboat, rng } from './geometry';
 import { createOceanMaterial } from './ocean';
 
@@ -36,10 +36,10 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
 
   const boats = useMemo(() => {
     const rand = rng(31);
-    return Array.from({ length: 3 }, (_, i) => {
+    return Array.from({ length: 5 }, (_, i) => {
       const b = sailboat();
       b.userData.phase = rand() * Math.PI * 2;
-      b.userData.radius = 13 + i * 4.5;
+      b.userData.radius = 26 + i * 16;
       b.userData.speed = 0.055 + rand() * 0.04;
       b.scale.setScalar(0.9 + rand() * 0.5);
       return b;
@@ -61,8 +61,12 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
       // Ring them around the horizon so they never sit between the camera
       // and the archipelago.
       const a = (i / 18) * Math.PI * 2 + rand() * 0.3;
-      const radius = 46 + rand() * 26;
-      c.position.set(Math.cos(a) * radius, 5 + rand() * 7, Math.sin(a) * radius - 4);
+      const radius = 86 + rand() * 40;
+      c.position.set(
+        LETTER_ORIGIN.R + Math.cos(a) * radius,
+        5 + rand() * 9,
+        Math.sin(a) * radius - 4,
+      );
       c.userData.drift = 0.12 + rand() * 0.2;
       g.add(c);
     }
@@ -71,7 +75,7 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
 
   const sunRef = useRef<THREE.DirectionalLight>(null);
   const hemiRef = useRef<THREE.HemisphereLight>(null);
-  const camRig = useRef({ x: 0, y: 0 });
+  const camRig = useRef({ x: 0, y: 0, lookX: 0 });
 
   // Sky colour + fog react to the day phase.
   useFrame((state, delta) => {
@@ -111,7 +115,7 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
     boats.forEach((b) => {
       const a = t * b.userData.speed + b.userData.phase;
       b.position.set(
-        Math.sin(a) * b.userData.radius,
+        LETTER_ORIGIN.R + Math.sin(a) * b.userData.radius,
         -0.16 + Math.sin(t * 1.6 + b.userData.phase) * 0.06,
         6 + Math.cos(a * 0.92) * b.userData.radius * 0.45,
       );
@@ -121,7 +125,7 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
 
     clouds.children.forEach((c) => {
       c.position.x += (c as THREE.Mesh).userData.drift * delta;
-      if (c.position.x > 74) c.position.x = -74;
+      if (c.position.x > LETTER_ORIGIN.R + 130) c.position.x = LETTER_ORIGIN.R - 130;
     });
 
     // Islands bob almost imperceptibly so the scene never feels frozen.
@@ -133,20 +137,31 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
     const cam = state.camera;
     // R3F keeps state.pointer in -1..1 NDC across the canvas.
     // Portrait viewports crop the letterform, so back the camera off until the
-    // whole "A" fits regardless of aspect.
+    // whole letter fits regardless of aspect.
     const persp = cam as THREE.PerspectiveCamera;
     const fit = THREE.MathUtils.clamp(1.5 / (persp.aspect || 1), 1, 1.8);
 
-    const targetX = state.pointer.x * 3.0 * fit;
-    const targetY = (33 - state.pointer.y * 2.0 + scroll * 10) * fit;
-    camRig.current.x += (targetX - camRig.current.x) * 0.03;
-    camRig.current.y += (targetY - camRig.current.y) * 0.03;
+    // Arrive over the A, then climb and pan right as the page scrolls until
+    // the whole ARC is in frame. Landing on the A is the point; seeing the
+    // word you live on is the payoff.
+    const reveal = THREE.MathUtils.smoothstep(scroll, 0.08, 0.85);
+    const WORD_CENTRE = (LETTER_ORIGIN.C + 7 - 27) / 2;
+
+    const panX = THREE.MathUtils.lerp(0, WORD_CENTRE, reveal);
+    const climb = THREE.MathUtils.lerp(33, 132, reveal);
+    const back = THREE.MathUtils.lerp(34, 96, reveal);
+
+    const targetX = panX + state.pointer.x * 3.0 * fit;
+    const targetY = (climb - state.pointer.y * 2.0) * fit;
+    camRig.current.x += (targetX - camRig.current.x) * 0.035;
+    camRig.current.y += (targetY - camRig.current.y) * 0.035;
     cam.position.x = camRig.current.x;
     cam.position.y = camRig.current.y;
-    cam.position.z = (34 + scroll * 14) * fit;
+    cam.position.z = back * fit;
+    camRig.current.lookX += (panX - camRig.current.lookX) * 0.035;
     // Aim below the waterline so the archipelago rides high in frame and the
     // headline gets clean water underneath it.
-    cam.lookAt(0, -4.5 * fit, -4 + scroll * -2);
+    cam.lookAt(camRig.current.lookX, -4.5 * fit, -4 + reveal * -3);
   });
 
   return (
@@ -158,15 +173,19 @@ export function HeroWorld({ night, scroll, paused = false }: WorldProps) {
         position={[-18, 30, -18]}
         intensity={5.4}
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
+        shadow-camera-left={-90}
+        shadow-camera-right={90}
+        shadow-camera-top={90}
+        shadow-camera-bottom={-90}
         shadow-bias={-0.0004}
       />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.72, 0]} receiveShadow>
-        <planeGeometry args={[420, 380, 240, 210]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[LETTER_ORIGIN.R, -0.72, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[620, 460, 300, 220]} />
         <primitive object={ocean} attach="material" />
       </mesh>
 
