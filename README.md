@@ -3,8 +3,8 @@
 A vacation-booking site for a 3D island world where players buy plots of land,
 land on them with nothing, and build them out.
 
-The archipelago spells **ARC**. Three letter-sections, 18 islands, **999 surveyed
-lots**, of which **496 are currently for sale**.
+The archipelago spells **ARC**. Three letter-sections, 18 islands, **1,124
+surveyed lots**, of which **568 are currently for sale**.
 
 - **The A** — arrivals. Every boat lands here. Six islands including the volcano
   that sits off the letterform and was not invited.
@@ -43,12 +43,15 @@ Other scripts: `npm run build`, `npm run typecheck`.
 ```
 src/
   app/            Next.js app router + global stylesheet
-  components/     Nav, Hero, IslandMap, LandOffice, Sections, BookingModal
+  components/     Nav, Hero, IslandMap, LandOffice, Sections, BookingModal,
+                  Reveal + Motion (the animation primitives)
+  hooks/          useInView, useReducedMotion
   world/          The 3D scene
     ocean.ts        Custom water shader: swell, depth gradient, shoreline foam,
                     sun glitter, night grade, horizon haze
     geometry.ts     Procedural islands, palms, huts, docks, boats
     HeroWorld.tsx   Scene assembly, lighting, day cycle, camera rig
+    IslandPreview.tsx  Single island on a turntable for the islands section
   lib/
     content.ts    All copy + the island/excursion/treasury data model
     plots.ts      Deterministic subdivision plats: streets, lots, prices, resales
@@ -84,6 +87,15 @@ being hand-written, and the world will subdivide land the same way.
   becomes a story.
 - **Scroll reveal.** The hero arrives over the A, then climbs and pans right as
   you scroll until the whole ARC is in frame.
+- **Live island preview.** The islands section renders the selected island in
+  real 3D on a turntable, built from the same procedural geometry as the hero,
+  so the preview and the world can never look like different games. It mounts
+  only while the section is on screen.
+- **Motion system.** `Reveal` / `SplitHeading` (IntersectionObserver entrances
+  and word-by-word headlines), `Counter` (numbers that count up on view),
+  `TiltCard` (cards that lean toward the pointer with a light that follows),
+  `GrowBar` and a marquee `Ticker`. All of it respects
+  `prefers-reduced-motion`.
 
 ## Land sale split
 

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { EVENTS, EXCURSIONS, FAQS, REVIEWS, TREASURY, VILLAS } from '@/lib/content';
+import { Counter, GrowBar, TiltCard, Ticker } from './Motion';
+import { Reveal, SplitHeading } from './Reveal';
 import styles from './Sections.module.css';
 
 const VIBE_LABEL: Record<string, string> = {
@@ -40,26 +42,26 @@ export function Arrival() {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker light">The arrival process</div>
-            <h2 className="section-title">
-              Everyone starts the same way:
-              <br />
-              wet, broke and optimistic.
-            </h2>
+            <Reveal>
+              <div className="kicker light">The arrival process</div>
+            </Reveal>
+            <SplitHeading
+              text={'Everyone starts the same way:\nwet, broke and optimistic.'}
+            />
           </div>
-          <p className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
+          <Reveal delay={120} className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
             No shortcuts, no starter mansion. You wash up on your plot like it is day one of
             the island and you have to earn the hammock.
-          </p>
+          </Reveal>
         </div>
 
         <ol className={styles.steps}>
-          {steps.map((s) => (
-            <li key={s.n}>
+          {steps.map((s, i) => (
+            <Reveal as="li" key={s.n} delay={i * 90}>
               <span>{s.n}</span>
               <h3>{s.t}</h3>
               <p>{s.c}</p>
-            </li>
+            </Reveal>
           ))}
         </ol>
       </div>
@@ -74,18 +76,22 @@ export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker">What you can put on it</div>
-            <h2 className="section-title">Rates, if you insist on calling them that.</h2>
+            <Reveal>
+              <div className="kicker">What you can put on it</div>
+            </Reveal>
+            <SplitHeading text={'Rates, if you insist\non calling them that.'} />
           </div>
-          <p className="lead">
+          <Reveal delay={120} className="lead">
             Everything here is built by you, on your land, out of materials you dragged up a
             beach. The prices are what it costs in $ISLAND to skip the dragging.
-          </p>
+          </Reveal>
         </div>
 
         <div className={styles.villaGrid}>
-          {VILLAS.map((v) => (
-            <article key={v.id} className={styles.villa}>
+          {VILLAS.map((v, i) => (
+            <Reveal key={v.id} delay={i * 90}>
+             <TiltCard>
+              <article className={styles.villa}>
               <div className={styles.villaTag}>{v.tag}</div>
               <h3>{v.name}</h3>
               <p>{v.copy}</p>
@@ -101,7 +107,45 @@ export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
                 </div>
                 <button onClick={() => onBook()}>Find a plot</button>
               </div>
-            </article>
+              </article>
+             </TiltCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Live numbers, straight out of the generated plats. */
+export function Stats({
+  lots,
+  forSale,
+  islands,
+}: {
+  lots: number;
+  forSale: number;
+  islands: number;
+}) {
+  const items = [
+    { n: lots, label: 'Lots surveyed' },
+    { n: forSale, label: 'For sale today' },
+    { n: islands, label: 'Islands' },
+    { n: 3, label: 'Letters to live on' },
+  ];
+  return (
+    <section className={styles.stats}>
+      <div className="shell">
+        <div className={styles.statGrid}>
+          {items.map((it, i) => (
+            <Reveal key={it.label} delay={i * 90} variant="scale">
+              <div className={styles.stat}>
+                <strong>
+                  <Counter to={it.n} />
+                </strong>
+                <span>{it.label}</span>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -122,22 +166,22 @@ export function Events() {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker light">Conditions on the ARC</div>
-            <h2 className="section-title">
-              The island is not
-              <br />
-              a passive investment.
-            </h2>
+            <Reveal>
+              <div className="kicker light">Conditions on the ARC</div>
+            </Reveal>
+            <SplitHeading text={'The island is not\na passive investment.'} />
           </div>
-          <p className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
+          <Reveal delay={120} className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
             Weather, wildlife and other people arrive on their own schedule. Your build
             either survives them or becomes a story. Both are content.
-          </p>
+          </Reveal>
         </div>
 
         <div className={styles.eventGrid}>
-          {EVENTS.map((e) => (
-            <article key={e.id} className={`${styles.event} ${styles[e.severity]}`}>
+          {EVENTS.map((e, i) => (
+            <Reveal key={e.id} delay={i * 80}>
+             <TiltCard>
+              <article className={`${styles.event} ${styles[e.severity]}`}>
               <div className={styles.eventTop}>
                 <span className={styles.eventIcon} aria-hidden="true">
                   {e.icon}
@@ -150,7 +194,9 @@ export function Events() {
               <p className={styles.defence}>
                 <b>Defence:</b> {e.defence}
               </p>
-            </article>
+              </article>
+             </TiltCard>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -171,28 +217,27 @@ export function Excursions() {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker">Do something. Apparently.</div>
-            <h2 className="section-title">
-              Activities for people
-              <br />
-              who are bad at relaxing.
-            </h2>
+            <Reveal>
+              <div className="kicker">Do something. Apparently.</div>
+            </Reveal>
+            <SplitHeading text={'Activities for people\nwho are bad at relaxing.'} />
           </div>
-          <p className="lead">
+          <Reveal delay={120} className="lead">
             Missions, basically, and the reason $ISLAND exists. You buy adventures with the
             token, not land. Some pay out. Some pay out and then something eats your dock.
-          </p>
+          </Reveal>
         </div>
 
         <div className={styles.excGrid}>
-          {EXCURSIONS.map((e) => {
+          {EXCURSIONS.map((e, i) => {
             const added = plan.includes(e.id);
             const open = openId === e.id;
             return (
-              <article
-                key={e.id}
-                className={`${styles.exc} ${styles[e.vibe]} ${added ? styles.excOn : ''}`}
-              >
+              <Reveal key={e.id} delay={i * 70}>
+               <TiltCard>
+                <article
+                  className={`${styles.exc} ${styles[e.vibe]} ${added ? styles.excOn : ''}`}
+                >
                 <div className={styles.excTop}>
                   <span className={styles.excIcon} aria-hidden="true">
                     {e.icon}
@@ -220,7 +265,9 @@ export function Excursions() {
                 <button className={styles.excAdd} onClick={() => toggle(e.id)}>
                   {added ? '✓ On your schedule' : 'Add to my day +'}
                 </button>
-              </article>
+                </article>
+               </TiltCard>
+              </Reveal>
             );
           })}
         </div>
@@ -252,37 +299,39 @@ export function Tokenomics() {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker light">Your folio</div>
-            <h2 className="section-title">
-              Where the money from
-              <br />
-              every plot actually goes.
-            </h2>
+            <Reveal>
+              <div className="kicker light">Your folio</div>
+            </Reveal>
+            <SplitHeading text={'Where the money from\nevery lot actually goes.'} />
           </div>
-          <p className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
+          <Reveal delay={120} className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
             Land is bought and sold in dollars, and can be resold by its owner at whatever
             the market will bear. $ISLAND is the in-island currency: adventures, materials,
             upgrades, bar tabs. Here is where every dollar of land revenue goes.
-          </p>
+          </Reveal>
         </div>
 
         <div className={styles.folio}>
-          <div className={styles.bar} role="img" aria-label="Land sale allocation">
-            {TREASURY.map((t) => (
-              <span key={t.label} style={{ width: `${t.pct}%`, background: t.color }} />
-            ))}
-          </div>
+          <GrowBar
+            segments={TREASURY.map((t) => ({
+              pct: t.pct,
+              color: t.color,
+              label: t.label,
+            }))}
+          />
 
           <ul className={styles.folioList}>
-            {TREASURY.map((t) => (
-              <li key={t.label}>
+            {TREASURY.map((t, i) => (
+              <Reveal as="li" key={t.label} delay={i * 80}>
                 <i style={{ background: t.color }} aria-hidden="true" />
-                <b>{t.pct}%</b>
+                <b>
+                  <Counter to={t.pct} suffix="%" />
+                </b>
                 <div>
                   <strong>{t.label}</strong>
                   <p>{t.detail}</p>
                 </div>
-              </li>
+              </Reveal>
             ))}
           </ul>
 
@@ -297,22 +346,26 @@ export function Tokenomics() {
   );
 }
 
+export { Ticker };
+
 export function Reviews() {
   return (
     <section className={styles.section}>
       <div className="shell">
-        <div className="kicker">Definitely real reviews</div>
-        <h2 className="section-title">Guests have thoughts.</h2>
+        <Reveal>
+          <div className="kicker">Definitely real reviews</div>
+        </Reveal>
+        <SplitHeading text="Guests have thoughts." />
         <div className={styles.quotes}>
-          {REVIEWS.map((r) => (
-            <blockquote key={r.who}>
+          {REVIEWS.map((r, i) => (
+            <Reveal as="blockquote" key={r.who} delay={i * 90}>
               <div className={styles.stars} aria-label={`${r.stars} out of 5`}>
                 {'★'.repeat(r.stars)}
                 {'☆'.repeat(5 - r.stars)}
               </div>
               <p>“{r.quote}”</p>
               <cite>— {r.who}</cite>
-            </blockquote>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -326,20 +379,18 @@ export function Faq() {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker">Important vacation shit</div>
-            <h2 className="section-title">
-              Before you pack six shirts
-              <br />
-              and wear one.
-            </h2>
+            <Reveal>
+              <div className="kicker">Important vacation shit</div>
+            </Reveal>
+            <SplitHeading text={'Before you pack six shirts\nand wear one.'} />
           </div>
         </div>
         <div className={styles.faq}>
-          {FAQS.map((f) => (
-            <details key={f.q}>
+          {FAQS.map((f, i) => (
+            <Reveal as="details" key={f.q} delay={i * 60}>
               <summary>{f.q}</summary>
               <p>{f.a}</p>
-            </details>
+            </Reveal>
           ))}
         </div>
       </div>

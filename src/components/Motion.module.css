@@ -1,0 +1,81 @@
+/* ---------- Ticker ---------- */
+.ticker {
+  overflow: hidden;
+  padding: 14px 0;
+  background: var(--ink);
+  color: #fff;
+  border-block: 1px solid rgba(255, 255, 255, 0.12);
+  user-select: none;
+}
+.track {
+  display: flex;
+  width: max-content;
+  animation: slide 38s linear infinite;
+}
+.reverse { animation-direction: reverse; }
+.track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  padding-right: 24px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.track i { color: var(--cyan); font-style: normal; }
+
+@keyframes slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker:hover .track { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+}
+
+/* ---------- Tilt ---------- */
+.tilt {
+  transition: transform 0.35s cubic-bezier(0.22, 0.8, 0.28, 1);
+  transform-style: preserve-3d;
+  height: 100%;
+  position: relative;
+}
+/* Light that follows the pointer across the card. */
+.tilt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    38% 50% at var(--gx, 50%) var(--gy, 50%),
+    rgba(255, 255, 255, 0.5),
+    transparent 70%
+  );
+}
+.tilt:hover::after { opacity: 0.5; }
+
+/* ---------- Growing bar ---------- */
+.growBar {
+  display: flex;
+  height: 22px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 26px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.growBar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  transition: width 1s cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .growBar span { transition: none; }
+}

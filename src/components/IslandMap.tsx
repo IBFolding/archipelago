@@ -1,28 +1,31 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ISLANDS } from '@/lib/content';
+import { ISLANDS, LETTERS, LETTER_ORIGIN } from '@/lib/content';
 import { USD, forSaleFor, fromPriceFor } from '@/lib/plots';
+import { IslandPreview } from '@/world/IslandPreview';
+import { useInView } from '@/hooks/useInView';
+import { Reveal, SplitHeading } from './Reveal';
 import styles from './Sections.module.css';
 
 /**
- * Top-down plan of the archipelago, generated from the same coordinates the
- * 3D hero uses — so the map and the world can never drift apart. The five
- * letterform islands spell the ARC "A"; the volcano sits off on its own.
+ * The whole word from the air. Positions come from the same definitions the 3D
+ * hero uses, so the map and the world can never drift apart.
  */
 export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
   const [activeId, setActiveId] = useState(ISLANDS[4].id);
   const active = ISLANDS.find((i) => i.id === activeId) ?? ISLANDS[0];
+  const { ref, inView } = useInView<HTMLDivElement>({ rootMargin: '200px' });
 
   const view = useMemo(() => {
-    const pad = 3.5;
-    // Keep the frame symmetric about x=0 so the letterform stays centred and
-    // the off-letter volcano just occupies the margin instead of skewing it.
-    const halfW = Math.max(...ISLANDS.map((i) => Math.abs(i.pos[0]) + i.shape.rx)) + pad;
-    const zs = ISLANDS.map((i) => i.pos[1]);
+    const pad = 6;
+    const xs = ISLANDS.flatMap((i) => [i.pos[0] - i.shape.rx, i.pos[0] + i.shape.rx]);
+    const zs = ISLANDS.flatMap((i) => [i.pos[1] - i.shape.rz, i.pos[1] + i.shape.rz]);
+    const minX = Math.min(...xs) - pad;
+    const maxX = Math.max(...xs) + pad;
     const minZ = Math.min(...zs) - pad;
     const maxZ = Math.max(...zs) + pad;
-    return { minX: -halfW, minZ, w: halfW * 2, h: maxZ - minZ };
+    return { minX, minZ, w: maxX - minX, h: maxZ - minZ };
   }, []);
 
   return (
@@ -30,30 +33,41 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
       <div className="shell">
         <div className="section-head">
           <div>
-            <div className="kicker">Six islands. One letter.</div>
-            <h2 className="section-title">
-              It is shaped like an <em className={styles.em}>A</em>.
-              <br />
-              For ARC. You can see it from the plane.
-            </h2>
+            <Reveal>
+              <div className="kicker">Eighteen islands. Three letters.</div>
+            </Reveal>
+            <SplitHeading text={'The archipelago\nspells ARC.'} />
           </div>
-          <p className="lead">
-            Five islands form the letter. The sixth is a volcano that was not invited and
-            turned up anyway. Pick one, and that is where you land with nothing.
-          </p>
+          <Reveal delay={120}>
+            <p className="lead">
+              An A to land on, an R to work on, a C to disappear on. You can see the whole
+              word from the plane, which is the single best thing about arriving here.
+            </p>
+          </Reveal>
         </div>
 
-        <div className={styles.mapGrid}>
-          <div className={styles.mapPane}>
+        <Reveal variant="scale">
+          <div className={styles.wordMap}>
             <svg
-              className={styles.map}
               viewBox={`${view.minX} ${view.minZ} ${view.w} ${view.h}`}
               role="group"
-              aria-label="Map of the archipelago"
+              aria-label="Map of the ARC archipelago"
+              className={styles.wordSvg}
             >
+              {LETTERS.map((L) => (
+                <text
+                  key={L.id}
+                  x={LETTER_ORIGIN[L.id] - 1}
+                  y={view.minZ + view.h - 3}
+                  className={styles.letterGhost}
+                  textAnchor="middle"
+                >
+                  {L.id}
+                </text>
+              ))}
+
               {ISLANDS.map((i) => {
                 const on = i.id === activeId;
-                const r = (i.shape.rx + i.shape.rz) / 2;
                 return (
                   <g
                     key={i.id}
@@ -68,12 +82,11 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
                     aria-label={i.name}
                     aria-pressed={on}
                   >
-                    {/* surf ring */}
                     <ellipse
-                      rx={i.shape.rx * 1.22}
-                      ry={i.shape.rz * 1.22}
+                      rx={i.shape.rx * 1.3}
+                      ry={i.shape.rz * 1.3}
                       fill="#ffffff"
-                      opacity={on ? 0.5 : 0.28}
+                      opacity={on ? 0.6 : 0.3}
                     />
                     <ellipse rx={i.shape.rx} ry={i.shape.rz} fill="#ffe7a3" />
                     <ellipse
@@ -86,7 +99,7 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
                       textAnchor="middle"
                       dominantBaseline="central"
                       transform={`rotate(${(-i.shape.rot * 180) / Math.PI})`}
-                      fontSize={r * 0.62}
+                      fontSize={Math.min(i.shape.rx, i.shape.rz) * 0.9}
                     >
                       {i.num}
                     </text>
@@ -94,17 +107,19 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
                 );
               })}
             </svg>
-            <div className={styles.compass} aria-hidden="true">
-              N ↑
-            </div>
-            <p className={styles.mapNote} aria-hidden="true">
-              boats go this-ish way →
-            </p>
+          </div>
+        </Reveal>
+
+        {/* selected island: live 3D on the left, details on the right */}
+        <div className={styles.previewGrid} ref={ref}>
+          <div className={styles.previewPane}>
+            <IslandPreview island={active} active={inView} />
+            <span className={styles.previewTag}>Island {active.num} · live</span>
           </div>
 
           <aside className={styles.mapCard}>
             <small>
-              Island {active.num} · {forSaleFor(active.id).length} lots for sale
+              {active.letter} section · {forSaleFor(active.id).length} lots for sale
             </small>
             <h3>{active.name}</h3>
             <p className={styles.tagline}>{active.tagline}</p>
@@ -119,7 +134,7 @@ export function IslandMap({ onBook }: { onBook: (islandId: string) => void }) {
                 <small>Lots from</small>
                 <strong>{USD.format(fromPriceFor(active.id) || active.fromPrice)}</strong>
               </div>
-              <button onClick={() => onBook(active.id)}>See the parcels</button>
+              <button onClick={() => onBook(active.id)}>See the lots</button>
             </div>
           </aside>
         </div>
