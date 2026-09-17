@@ -1,0 +1,125 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  /* Sun-bleached paper, warm at the top, cooling toward the lagoon. */
+  background:
+    linear-gradient(180deg, #fff4d8 0%, #ffeccd 20%, #e6fbf2 48%, #d8f4fb 74%, #fff2dc 100%);
+}
+
+/* Low sun burning in from the top right. */
+.sun {
+  position: absolute;
+  top: -22vh;
+  right: -14vw;
+  width: 78vw;
+  height: 78vw;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 214, 120, 0.55) 0%,
+    rgba(255, 186, 92, 0.24) 38%,
+    rgba(255, 186, 92, 0) 68%
+  );
+  animation: breathe 14s ease-in-out infinite;
+}
+
+/* Drifting washes of lagoon, mango and coral. */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: 0.72;
+  will-change: transform;
+}
+.b1 {
+  width: 46vw;
+  height: 46vw;
+  left: -12vw;
+  top: 8vh;
+  background: radial-gradient(circle, rgba(64, 232, 226, 0.72), rgba(92, 242, 236, 0) 70%);
+  animation: drift1 26s ease-in-out infinite;
+}
+.b2 {
+  width: 40vw;
+  height: 40vw;
+  right: -8vw;
+  top: 46vh;
+  background: radial-gradient(circle, rgba(255, 122, 92, 0.5), rgba(255, 114, 88, 0) 70%);
+  animation: drift2 32s ease-in-out infinite;
+}
+.b3 {
+  width: 52vw;
+  height: 52vw;
+  left: 18vw;
+  bottom: -18vh;
+  background: radial-gradient(circle, rgba(32, 176, 110, 0.44), rgba(25, 144, 90, 0) 70%);
+  animation: drift3 38s ease-in-out infinite;
+}
+.b4 {
+  width: 34vw;
+  height: 34vw;
+  right: 24vw;
+  top: -8vh;
+  background: radial-gradient(circle, rgba(255, 186, 46, 0.58), rgba(255, 176, 32, 0) 70%);
+  animation: drift2 29s ease-in-out infinite reverse;
+}
+
+@keyframes drift1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6vw, 5vh, 0) scale(1.12); }
+}
+@keyframes drift2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-7vw, -4vh, 0) scale(1.1); }
+}
+@keyframes drift3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50% { transform: translate3d(4vw, -6vh, 0) scale(0.95); }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Palm fronds, as shadows rather than objects. */
+.frond {
+  position: absolute;
+  width: 46vw;
+  max-width: 620px;
+  height: auto;
+  color: rgba(12, 94, 58, 0.13);
+  transform-origin: 14px 26px;
+}
+.frondLeft {
+  top: -4vh;
+  left: -10vw;
+  transform: rotate(18deg);
+  animation: sway 11s ease-in-out infinite;
+}
+.frondRight {
+  bottom: -6vh;
+  right: -12vw;
+  transform: rotate(196deg);
+  animation: sway 13s ease-in-out infinite reverse;
+}
+
+@keyframes sway {
+  0%, 100% { rotate: 0deg; }
+  50% { rotate: 2.5deg; }
+}
+
+/* Paper grain, so the flat areas are never truly flat. */
+.grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.14;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sun, .blob, .frond { animation: none; }
+}

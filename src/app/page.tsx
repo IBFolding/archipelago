@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { Backdrop } from '@/components/Backdrop';
 import { Nav } from '@/components/Nav';
 import { Hero } from '@/components/Hero';
 import { IslandMap } from '@/components/IslandMap';
@@ -54,6 +55,7 @@ export default function Page() {
 
   return (
     <>
+      <Backdrop />
       <Nav />
       <main>
         <Hero onBook={showLand} />

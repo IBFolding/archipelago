@@ -91,6 +91,11 @@ being hand-written, and the world will subdivide land the same way.
   real 3D on a turntable, built from the same procedural geometry as the hero,
   so the preview and the world can never look like different games. It mounts
   only while the section is on screen.
+- **Tropical backdrop.** A fixed atmosphere layer sits behind the whole page:
+  a low sun burning in from the top right, four slow-drifting washes of lagoon,
+  mango, coral and palm green, swaying palm-frond shadows cast from off-screen
+  trees, and a little paper grain. Sections float over it as rounded slabs
+  rather than cutting the page into flat bands.
 - **Motion system.** `Reveal` / `SplitHeading` (IntersectionObserver entrances
   and word-by-word headlines), `Counter` (numbers that count up on view),
   `TiltCard` (cards that lean toward the pointer with a light that follows),
