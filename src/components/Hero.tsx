@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { HeroWorld } from '@/world/HeroWorld';
 import { ISLANDS } from '@/lib/content';
+import { asset } from '@/lib/paths';
 import styles from './Hero.module.css';
 
 type Phase = 'live' | 'day' | 'sunset' | 'night';
@@ -78,7 +79,7 @@ export function Hero({ onBook }: { onBook: (islandId?: string) => void }) {
     <section className={styles.hero} ref={sectionRef} id="top">
       <div className={styles.canvasWrap} aria-hidden="true">
         {webgl === false && (
-          <img className={styles.fallback} src="/assets/hero-reference.png" alt="" />
+          <img className={styles.fallback} src={asset("/assets/hero-reference.png")} alt="" />
         )}
         {webgl && (
           <Canvas

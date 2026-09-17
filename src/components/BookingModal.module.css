@@ -82,3 +82,17 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+.startBuilding {
+  display: block;
+  margin-top: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: #01202f;
+  background: linear-gradient(180deg, var(--cyan), #14b7e0);
+  box-shadow: 0 12px 30px rgba(20, 183, 224, 0.34);
+}
+.startBuilding:hover { filter: brightness(1.05); }

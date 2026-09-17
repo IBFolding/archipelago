@@ -1,0 +1,327 @@
+'use client';
+
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import Link from 'next/link';
+import { BuildWorld } from '@/world/BuildWorld';
+import {
+  BRAND_COLORS,
+  DEFAULT_BRAND,
+  GRID_D,
+  GRID_W,
+  START_BUDGET,
+  canPlace,
+  loadLot,
+  saveLot,
+  spentOf,
+  uid,
+  type Brand,
+  type Placed,
+} from '@/lib/build';
+import { BRANDABLE, CATEGORY_LABEL, KIT, KIT_BY_ID, type KitCategory } from '@/world/buildKit';
+import styles from './build.module.css';
+
+const CATEGORIES: KitCategory[] = [
+  'structures',
+  'leisure',
+  'nature',
+  'utility',
+  'signage',
+];
+
+export default function BuildPage() {
+  const [lotId, setLotId] = useState('demo');
+  const [items, setItems] = useState<Placed[]>([]);
+  const [brush, setBrush] = useState<string | null>(null);
+  const [brushRot, setBrushRot] = useState(0);
+  const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [hover, setHover] = useState<{ x: number; z: number } | null>(null);
+  const [category, setCategory] = useState<KitCategory>('structures');
+  const [night, setNight] = useState(0);
+  const [status, setStatus] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Load whichever lot the land office sent us to.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('lot');
+    const id = q || 'demo';
+    setLotId(id);
+    setItems(loadLot(id).items);
+    setReady(true);
+  }, []);
+
+  const spent = useMemo(() => spentOf(items), [items]);
+  const budget = START_BUDGET - spent;
+  const selected = items.find((i) => i.uid === selectedUid) ?? null;
+
+  const ghost = useMemo(() => {
+    if (!brush || !hover) return null;
+    const candidate: Placed = { uid: '_ghost', kitId: brush, x: hover.x, z: hover.z, rot: brushRot };
+    const affordable = (KIT_BY_ID[brush]?.cost ?? 0) <= budget;
+    return { x: hover.x, z: hover.z, ok: canPlace(items, candidate) && affordable };
+  }, [brush, hover, brushRot, items, budget]);
+
+  const place = useCallback(
+    (x: number, z: number) => {
+      if (!brush) return;
+      const item = KIT_BY_ID[brush];
+      if (!item) return;
+      if (item.cost > budget) {
+        setStatus('Not enough $ISLAND for that.');
+        return;
+      }
+      const next: Placed = {
+        uid: uid(),
+        kitId: brush,
+        x,
+        z,
+        rot: brushRot,
+        brand: BRANDABLE.has(brush) ? { ...DEFAULT_BRAND } : undefined,
+      };
+      if (!canPlace(items, next)) {
+        setStatus('That does not fit there.');
+        return;
+      }
+      setItems((prev) => [...prev, next]);
+      setStatus(null);
+    },
+    [brush, brushRot, budget, items],
+  );
+
+  const rotateSelected = () => {
+    if (!selected) return;
+    const rotated = { ...selected, rot: (selected.rot + 1) % 4 };
+    if (!canPlace(items, rotated)) {
+      setStatus('No room to turn that here.');
+      return;
+    }
+    setItems((prev) => prev.map((i) => (i.uid === selected.uid ? rotated : i)));
+  };
+
+  const removeSelected = () => {
+    if (!selected) return;
+    setItems((prev) => prev.filter((i) => i.uid !== selected.uid));
+    setSelectedUid(null);
+  };
+
+  const updateBrand = (patch: Partial<Brand>) => {
+    if (!selected) return;
+    setItems((prev) =>
+      prev.map((i) =>
+        i.uid === selected.uid
+          ? { ...i, brand: { ...DEFAULT_BRAND, ...i.brand, ...patch } }
+          : i,
+      ),
+    );
+  };
+
+  // Keyboard: R rotates the brush, Escape clears, Delete removes.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      if (e.key === 'r' || e.key === 'R') {
+        if (selected) rotateSelected();
+        else setBrushRot((r) => (r + 1) % 4);
+      }
+      if (e.key === 'Escape') {
+        setBrush(null);
+        setSelectedUid(null);
+      }
+      if (e.key === 'Backspace' || e.key === 'Delete') removeSelected();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  const save = () => {
+    const ok = saveLot({ lotId, items });
+    setStatus(ok ? 'Saved to this browser.' : 'Could not save — storage is blocked here.');
+  };
+
+  const clearAll = () => {
+    setItems([]);
+    setSelectedUid(null);
+    setStatus('Lot cleared.');
+  };
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.canvasWrap}>
+        <Canvas
+          shadows
+          dpr={[1, 1.6]}
+          gl={{ antialias: true }}
+          camera={{ fov: 42, position: [0, 17, 21], near: 0.1, far: 400 }}
+        >
+          <Suspense fallback={null}>
+            <BuildWorld
+              items={items}
+              selectedUid={selectedUid}
+              brush={brush}
+              brushRot={brushRot}
+              night={night}
+              ghost={ghost}
+              onCellClick={place}
+              onCellHover={(x, z) => setHover({ x, z })}
+              onSelect={setSelectedUid}
+            />
+            <OrbitControls
+              makeDefault
+              enablePan
+              maxPolarAngle={1.42}
+              minDistance={8}
+              maxDistance={48}
+              target={[0, 0, 0]}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* ------------------------------------------------------ top bar -- */}
+      <header className={styles.topbar}>
+        <Link href="/" className={styles.back}>
+          ← ARCHipelago
+        </Link>
+        <div className={styles.lotName}>
+          <small>Your lot</small>
+          <strong>{lotId === 'demo' ? 'Demo lot' : lotId}</strong>
+        </div>
+        <div className={styles.budget}>
+          <small>Balance</small>
+          <strong className={budget < 500 ? styles.low : undefined}>
+            {budget.toLocaleString()} <span>$ISLAND</span>
+          </strong>
+        </div>
+        <div className={styles.topActions}>
+          <button onClick={() => setNight((n) => (n > 0.5 ? 0 : 1))}>
+            {night > 0.5 ? '☀ Day' : '☾ Night'}
+          </button>
+          <button onClick={save}>Save</button>
+          <button onClick={clearAll} className={styles.danger}>
+            Clear
+          </button>
+        </div>
+      </header>
+
+      {status && (
+        <p className={styles.status} role="status">
+          {status}
+        </p>
+      )}
+
+      {/* --------------------------------------------------- palette ----- */}
+      <aside className={styles.palette}>
+        <div className={styles.cats}>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              className={category === c ? styles.catOn : undefined}
+              onClick={() => setCategory(c)}
+            >
+              {CATEGORY_LABEL[c]}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.kit}>
+          {KIT.filter((k) => k.category === category).map((k) => {
+            const on = brush === k.id;
+            const tooDear = k.cost > budget;
+            return (
+              <button
+                key={k.id}
+                className={`${styles.kitItem} ${on ? styles.kitOn : ''} ${
+                  tooDear ? styles.kitDear : ''
+                }`}
+                onClick={() => {
+                  setBrush(on ? null : k.id);
+                  setSelectedUid(null);
+                }}
+              >
+                <strong>{k.name}</strong>
+                <span>{k.blurb}</span>
+                <em>
+                  {k.cost.toLocaleString()} $ISLAND · {k.size[0]}×{k.size[1]}
+                </em>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className={styles.hint}>
+          {brush
+            ? 'Click the lot to place. R rotates. Escape cancels.'
+            : 'Pick something, or click a piece you have already built.'}
+        </p>
+      </aside>
+
+      {/* ------------------------------------------------ selected piece -- */}
+      {selected && (
+        <aside className={styles.inspector}>
+          <div className={styles.inspHead}>
+            <strong>{KIT_BY_ID[selected.kitId]?.name}</strong>
+            <button onClick={() => setSelectedUid(null)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          <div className={styles.inspActions}>
+            <button onClick={rotateSelected}>Rotate</button>
+            <button onClick={removeSelected} className={styles.danger}>
+              Remove
+            </button>
+          </div>
+
+          {BRANDABLE.has(selected.kitId) && (
+            <div className={styles.brand}>
+              <small>Put a name on it</small>
+              <label>
+                <span>Name</span>
+                <input
+                  value={selected.brand?.name ?? ''}
+                  maxLength={18}
+                  onChange={(e) => updateBrand({ name: e.target.value })}
+                />
+              </label>
+              <label>
+                <span>Ticker</span>
+                <input
+                  value={selected.brand?.ticker ?? ''}
+                  maxLength={16}
+                  onChange={(e) => updateBrand({ ticker: e.target.value })}
+                />
+              </label>
+              <label>
+                <span>Logo</span>
+                <input
+                  value={selected.brand?.emoji ?? ''}
+                  maxLength={4}
+                  onChange={(e) => updateBrand({ emoji: e.target.value })}
+                />
+              </label>
+              <div className={styles.swatches}>
+                {BRAND_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    style={{ background: c }}
+                    aria-label={`Colour ${c}`}
+                    className={selected.brand?.color === c ? styles.swOn : undefined}
+                    onClick={() => updateBrand({ color: c })}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+      )}
+
+      {ready && !items.length && (
+        <div className={styles.empty}>
+          <strong>Bare sand, {GRID_W}×{GRID_D} paces.</strong>
+          <span>Pick something from the kit and put it somewhere.</span>
+        </div>
+      )}
+    </div>
+  );
+}

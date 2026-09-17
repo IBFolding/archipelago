@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { asset } from '@/lib/paths';
 
 export const metadata: Metadata = {
   title: 'ARCHipelago — $ISLAND',
@@ -8,9 +9,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ARCHipelago — $ISLAND',
     description: 'Kick back. Relax. Let the degens cook.',
-    images: ['/assets/hero-reference.png'],
+    images: [asset('/assets/hero-reference.png')],
   },
-  icons: { icon: '/assets/archipelago-logo.png' },
+  icons: { icon: asset('/assets/archipelago-logo.png') },
 };
 
 export const viewport: Viewport = {

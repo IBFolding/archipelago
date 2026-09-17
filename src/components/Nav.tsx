@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { asset } from '@/lib/paths';
 import styles from './Nav.module.css';
 
 const LINKS = [
   { href: '#islands', label: 'The islands' },
   { href: '#land', label: 'Land' },
-  { href: '#build', label: 'Build' },
+  { href: '/build', label: 'Build' },
   { href: '#excursions', label: 'Excursions' },
   { href: '#events', label: 'Events' },
   { href: '#tokenomics', label: 'Tokenomics' },
@@ -33,7 +35,7 @@ export function Nav() {
   return (
     <header className={`${styles.nav} ${solid ? styles.solid : ''}`}>
       <a className={styles.brand} href="#top">
-        <img src="/assets/archipelago-logo.png" alt="" width={34} height={34} />
+        <img src={asset("/assets/archipelago-logo.png")} alt="" width={34} height={34} />
         <span className={styles.brandText}>
           <span className={styles.wordmark}>
             <b>ARC</b>HIPELAGO
@@ -43,11 +45,17 @@ export function Nav() {
       </a>
 
       <nav className={`${styles.links} ${open ? styles.open : ''}`}>
-        {LINKS.map((l) => (
-          <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
-            {l.label}
-          </a>
-        ))}
+        {LINKS.map((l) =>
+          l.href.startsWith('#') ? (
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+              {l.label}
+            </a>
+          ) : (
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>
+              {l.label}
+            </Link>
+          ),
+        )}
       </nav>
 
       <div className={styles.right}>

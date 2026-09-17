@@ -72,7 +72,7 @@ export function Arrival() {
 /** Build catalogue, dressed as villa rates. */
 export function Build({ onBook }: { onBook: (islandId?: string) => void }) {
   return (
-    <section className={styles.section} id="build">
+    <section className={styles.section} id="rates">
       <div className="shell">
         <div className="section-head">
           <div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { ISLANDS } from '@/lib/content';
 import { TIER_LABEL, USD, askingPrice, forSaleFor, type Plot } from '@/lib/plots';
 import styles from './BookingModal.module.css';
@@ -133,10 +134,18 @@ export function BookingModal({
         </button>
 
         {confirmed && (
-          <p className={styles.confirmed} role="status">
-            ✓ Beautiful. Nothing has been charged and the parcel is not held. Your
-            vacation energy, however, is confirmed.
-          </p>
+          <>
+            <p className={styles.confirmed} role="status">
+              ✓ Beautiful. Nothing has been charged and the parcel is not held. Your
+              vacation energy, however, is confirmed.
+            </p>
+            <Link
+              className={styles.startBuilding}
+              href={state.plot ? `/build?lot=${state.plot.id}` : '/build'}
+            >
+              Start building on it →
+            </Link>
+          </>
         )}
       </div>
     </div>
