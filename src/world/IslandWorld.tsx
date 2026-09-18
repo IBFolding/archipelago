@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { OrbitControls } from '@react-three/drei';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -165,135 +166,137 @@ function neighbourGeo(plot: Plot, n: Neighbour): THREE.BufferGeometry[] {
   return out;
 }
 
-export interface IslandWorldProps {
-  island: Island;
-  /** Lot ids the visitor has a saved build on. */
+/** Local (island) coordinates -> world, applying the island's place in ARC. */
+export function localToWorld(island: Island, x: number, z: number) {
+  const c = Math.cos(island.shape.rot);
+  const s = Math.sin(island.shape.rot);
+  return [island.pos[0] + x * c - z * s, island.pos[1] + x * s + z * c] as const;
+}
+
+/** World coordinates -> island-local, for hit testing against the plat. */
+export function worldToLocal(island: Island, x: number, z: number) {
+  const dx = x - island.pos[0];
+  const dz = z - island.pos[1];
+  const c = Math.cos(-island.shape.rot);
+  const s = Math.sin(-island.shape.rot);
+  return [dx * c - dz * s, dx * s + dz * c] as const;
+}
+
+/** True when a world point falls on this island's landmass. */
+export function hitsIsland(island: Island, x: number, z: number) {
+  const [lx, lz] = worldToLocal(island, x, z);
+  return Math.hypot(lx / (island.shape.rx * 1.12), lz / (island.shape.rz * 1.12)) <= 1;
+}
+
+export interface WorldProps {
+  islands: Island[];
+  /** null shows the whole archipelago; an id flies to that island. */
+  focusId: string | null;
   ownedIds: Set<string>;
-  selectedId: string | null;
+  selectedLotId: string | null;
   night: number;
+  onPickIsland: (island: Island) => void;
   onPickLot: (plot: Plot | null) => void;
 }
 
-export function IslandWorld({
-  island,
-  ownedIds,
-  selectedId,
-  night,
-  onPickLot,
-}: IslandWorldProps) {
-  const { scene } = useThree();
-  const sunRef = useRef<THREE.DirectionalLight>(null);
+/** Terrain + merged roads, pads and buildings for one island, at its place. */
+function buildIsland(island: Island, ownedIds: Set<string>) {
   const { rx, rz } = island.shape;
-  const plat = useMemo(() => platFor(island.id), [island.id]);
+  const plat = platFor(island.id);
+  const group = new THREE.Group();
 
-  // ------------------------------------------------------------ terrain --
-  const terrain = useMemo(() => {
-    const g = new THREE.Group();
+  // --- terrain ---
+  const sandShape = blobShape(rx * 1.1, rz * 1.1, 3, 0.6);
+  const sandGeo = new THREE.ExtrudeGeometry(sandShape, {
+    depth: 0.3,
+    bevelEnabled: true,
+    bevelSize: 0.12,
+    bevelThickness: 0.12,
+    bevelSegments: 2,
+    steps: 1,
+    curveSegments: 30,
+  });
+  sandGeo.rotateX(Math.PI / 2);
+  const sand = new THREE.Mesh(
+    sandGeo,
+    new THREE.MeshStandardMaterial({ color: SAND, roughness: 0.95 }),
+  );
+  sand.position.y = -0.16;
+  sand.receiveShadow = true;
+  group.add(sand);
 
-    const sandShape = blobShape(rx * 1.1, rz * 1.1, 3, 0.6);
-    const sandGeo = new THREE.ExtrudeGeometry(sandShape, {
-      depth: 0.3,
-      bevelEnabled: true,
-      bevelSize: 0.12,
-      bevelThickness: 0.12,
-      bevelSegments: 2,
-      steps: 1,
-      curveSegments: 30,
-    });
-    sandGeo.rotateX(Math.PI / 2);
-    const sand = new THREE.Mesh(
-      sandGeo,
-      new THREE.MeshStandardMaterial({ color: SAND, roughness: 0.95 }),
-    );
-    sand.position.y = -0.16;
-    sand.receiveShadow = true;
-    g.add(sand);
+  const grassGeo = new THREE.CircleGeometry(1, 64);
+  grassGeo.rotateX(-Math.PI / 2);
+  const grass = new THREE.Mesh(
+    grassGeo,
+    new THREE.MeshStandardMaterial({ color: GRASS, roughness: 0.96 }),
+  );
+  grass.scale.set(rx * 0.995, 1, rz * 0.995);
+  grass.position.y = 0.002;
+  grass.receiveShadow = true;
+  group.add(grass);
 
-    const grassGeo = new THREE.CircleGeometry(1, 64);
-    grassGeo.rotateX(-Math.PI / 2);
-    const grass = new THREE.Mesh(
-      grassGeo,
-      new THREE.MeshStandardMaterial({ color: GRASS, roughness: 0.96 }),
-    );
-    grass.scale.set(rx * 0.995, 1, rz * 0.995);
-    grass.position.y = 0.002;
-    grass.receiveShadow = true;
-    g.add(grass);
+  // --- roads, pads, buildings, all merged into one mesh ---
+  const geos: THREE.BufferGeometry[] = [];
 
-    return g;
-  }, [rx, rz]);
+  const SEG = 72;
+  for (let i = 0; i < SEG; i++) {
+    const a0 = (i / SEG) * Math.PI * 2;
+    const a1 = ((i + 1) / SEG) * Math.PI * 2;
+    const r = 0.965;
+    const x0 = Math.cos(a0) * rx * r;
+    const z0 = Math.sin(a0) * rz * r;
+    const x1 = Math.cos(a1) * rx * r;
+    const z1 = Math.sin(a1) * rz * r;
+    const len = Math.hypot(x1 - x0, z1 - z0) * 1.15;
+    const g = new THREE.BoxGeometry(len, 0.02, 0.2);
+    g.rotateY(-Math.atan2(z1 - z0, x1 - x0));
+    g.translate((x0 + x1) / 2, 0.012, (z0 + z1) / 2);
+    geos.push(tint(g, ROAD));
+  }
 
-  // ------------------------------- roads, pads and buildings, all merged --
-  const built = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = [];
-
-    // Coast road: a ring of short segments following the shoreline.
-    const SEG = 72;
-    for (let i = 0; i < SEG; i++) {
-      const a0 = (i / SEG) * Math.PI * 2;
-      const a1 = ((i + 1) / SEG) * Math.PI * 2;
-      const r = 0.965;
-      const x0 = Math.cos(a0) * rx * r;
-      const z0 = Math.sin(a0) * rz * r;
-      const x1 = Math.cos(a1) * rx * r;
-      const z1 = Math.sin(a1) * rz * r;
-      const len = Math.hypot(x1 - x0, z1 - z0) * 1.15;
-      const g = new THREE.BoxGeometry(len, 0.02, 0.2);
-      g.rotateY(-Math.atan2(z1 - z0, x1 - x0));
-      g.translate((x0 + x1) / 2, 0.012, (z0 + z1) / 2);
+  for (const st of plat.streets) {
+    if (st.kind === 'street') {
+      const zc = st.z + st.d / 2;
+      const k = 1 - (zc / rz) ** 2;
+      if (k <= 0.01) continue;
+      const halfW = rx * Math.sqrt(k) * 0.95;
+      const g = new THREE.BoxGeometry(halfW * 2, 0.02, st.d);
+      g.translate(0, 0.012, zc);
+      geos.push(tint(g, ROAD));
+    } else {
+      const xc = st.x + st.w / 2;
+      const k = 1 - (xc / rx) ** 2;
+      if (k <= 0.01) continue;
+      const halfD = rz * Math.sqrt(k) * 0.95;
+      const g = new THREE.BoxGeometry(st.w, 0.02, halfD * 2);
+      g.translate(xc, 0.012, 0);
       geos.push(tint(g, ROAD));
     }
+  }
 
-    // Streets and avenues, trimmed to the island's chord so they stop at the
-    // coast instead of running out over the water.
-    for (const s of plat.streets) {
-      if (s.kind === 'street') {
-        const zc = s.z + s.d / 2;
-        const k = 1 - (zc / rz) ** 2;
-        if (k <= 0.01) continue;
-        const halfW = rx * Math.sqrt(k) * 0.95;
-        const g = new THREE.BoxGeometry(halfW * 2, 0.02, s.d);
-        g.translate(0, 0.012, zc);
-        geos.push(tint(g, ROAD));
-      } else {
-        const xc = s.x + s.w / 2;
-        const k = 1 - (xc / rx) ** 2;
-        if (k <= 0.01) continue;
-        const halfD = rz * Math.sqrt(k) * 0.95;
-        const g = new THREE.BoxGeometry(s.w, 0.02, halfD * 2);
-        g.translate(xc, 0.012, 0);
-        geos.push(tint(g, ROAD));
-      }
+  for (const p of plat.plots) {
+    const mine = ownedIds.has(p.id);
+    const pad = mine ? PAD_MINE : p.claimed ? PAD_SOLD : PAD_OPEN;
+    const g = new THREE.BoxGeometry(p.rect.w * 0.94, 0.014, p.rect.d * 0.94);
+    g.translate(p.rect.x + p.rect.w / 2, 0.02, p.rect.z + p.rect.d / 2);
+    geos.push(tint(g, pad));
+
+    if (mine) {
+      const cx = p.rect.x + p.rect.w / 2;
+      const cz = p.rect.z + p.rect.d / 2;
+      geos.push(box(0.03, 0.5, 0.03, cx, 0.02, cz, 0x04314f));
+      geos.push(box(0.2, 0.12, 0.02, cx + 0.1, 0.4, cz, PAD_MINE));
+      continue;
     }
 
-    // Lot pads + whatever stands on them.
-    for (const p of plat.plots) {
-      const mine = ownedIds.has(p.id);
-      const pad = mine ? PAD_MINE : p.claimed ? PAD_SOLD : PAD_OPEN;
-      const g = new THREE.BoxGeometry(p.rect.w * 0.94, 0.014, p.rect.d * 0.94);
-      g.translate(p.rect.x + p.rect.w / 2, 0.02, p.rect.z + p.rect.d / 2);
-      geos.push(tint(g, pad));
+    const n = neighbourFor(p);
+    if (n) geos.push(...neighbourGeo(p, n));
+  }
 
-      if (mine) {
-        // Your lot gets a marker post rather than a building — the builder
-        // works at walking scale and does not map onto a survey parcel yet.
-        geos.push(
-          box(0.03, 0.5, 0.03, p.rect.x + p.rect.w / 2, 0.02, p.rect.z + p.rect.d / 2, 0x04314f),
-        );
-        geos.push(
-          box(0.2, 0.12, 0.02, p.rect.x + p.rect.w / 2 + 0.1, 0.4, p.rect.z + p.rect.d / 2, PAD_MINE),
-        );
-        continue;
-      }
-
-      const n = neighbourFor(p);
-      if (n) geos.push(...neighbourGeo(p, n));
-    }
-
-    const merged = mergeGeometries(geos, false);
-    geos.forEach((g) => g.dispose());
-    if (!merged) return new THREE.Group();
-
+  const merged = mergeGeometries(geos, false);
+  geos.forEach((g) => g.dispose());
+  if (merged) {
     merged.computeVertexNormals();
     const mesh = new THREE.Mesh(
       merged,
@@ -301,60 +304,204 @@ export function IslandWorld({
     );
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    group.add(mesh);
+  }
 
+  group.position.set(island.pos[0], 0, island.pos[1]);
+  group.rotation.y = island.shape.rot;
+  return group;
+}
+
+/** Flies the camera between the archipelago overview and a single island. */
+function CameraRig({
+  islands,
+  focus,
+  controls,
+}: {
+  islands: Island[];
+  focus: Island | null;
+  controls: React.MutableRefObject<{ target: THREE.Vector3; update: () => void } | null>;
+}) {
+  const wanted = useRef({
+    pos: new THREE.Vector3(),
+    target: new THREE.Vector3(),
+    settled: false,
+    aspect: 0,
+  });
+
+  // Bounds of the whole word, used to frame the overview.
+  const world = useMemo(() => {
+    const xs = islands.flatMap((i) => [i.pos[0] - i.shape.rx, i.pos[0] + i.shape.rx]);
+    const zs = islands.flatMap((i) => [i.pos[1] - i.shape.rz, i.pos[1] + i.shape.rz]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minZ = Math.min(...zs);
+    const maxZ = Math.max(...zs);
+    return {
+      cx: (minX + maxX) / 2,
+      cz: (minZ + maxZ) / 2,
+      w: maxX - minX,
+      d: maxZ - minZ,
+    };
+  }, [islands]);
+
+  /** Distance needed to fit a width/depth in frame at this camera and aspect. */
+  const fit = (cam: THREE.PerspectiveCamera, w: number, d: number, pad: number) => {
+    const half = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+    const forH = d / 2 / half;
+    const forW = w / 2 / (half * (cam.aspect || 1));
+    return Math.max(forH, forW) * pad;
+  };
+
+  useFrame((state, delta) => {
+    const cam = state.camera as THREE.PerspectiveCamera;
+
+    // A resize changes what fits in frame, so re-frame rather than keeping a
+    // distance computed for the old aspect.
+    const aspect = cam.aspect || 1;
+    if (Math.abs(aspect - wanted.current.aspect) > 0.02) {
+      wanted.current.aspect = aspect;
+      wanted.current.settled = false;
+    }
+
+    // Look down from a fixed angle, at whatever distance frames the subject.
+    const DIR = new THREE.Vector3(0, 0.66, 0.75).normalize();
+
+    if (focus) {
+      const d = fit(cam, focus.shape.rx * 2.6, focus.shape.rz * 2.6, 1.05);
+      wanted.current.target.set(focus.pos[0], 0, focus.pos[1]);
+      wanted.current.pos
+        .copy(wanted.current.target)
+        .addScaledVector(DIR, d);
+    } else {
+      const d = fit(cam, world.w * 1.1, world.d * 1.4, 1.02);
+      wanted.current.target.set(world.cx, 0, world.cz);
+      wanted.current.pos
+        .copy(wanted.current.target)
+        .addScaledVector(DIR, d);
+    }
+
+    // Ease in; once close enough, hand control back to the user's orbiting.
+    const k = 1 - Math.pow(0.0015, delta);
+    if (!wanted.current.settled) {
+      cam.position.lerp(wanted.current.pos, k);
+      const c = controls.current;
+      if (c) {
+        c.target.lerp(wanted.current.target, k);
+        c.update();
+      }
+      if (cam.position.distanceTo(wanted.current.pos) < 0.4) {
+        wanted.current.settled = true;
+      }
+    }
+  });
+
+  // Any change of focus restarts the flight.
+  useEffect(() => {
+    wanted.current.settled = false;
+  }, [focus]);
+
+  return null;
+}
+
+export function IslandWorld({
+  islands,
+  focusId,
+  ownedIds,
+  selectedLotId,
+  night,
+  onPickIsland,
+  onPickLot,
+}: WorldProps) {
+  const { scene } = useThree();
+  const sunRef = useRef<THREE.DirectionalLight>(null);
+  const controls = useRef<{ target: THREE.Vector3; update: () => void } | null>(null);
+
+  const focus = islands.find((i) => i.id === focusId) ?? null;
+
+  // Every island is built once and reused; only ownership changes rebuild it.
+  const groups = useMemo(() => {
     const g = new THREE.Group();
-    g.add(mesh);
+    islands.forEach((i) => g.add(buildIsland(i, ownedIds)));
     return g;
-  }, [plat, ownedIds, rx, rz]);
+  }, [islands, ownedIds]);
 
-  // Highlight ring on the selected lot.
   const marker = useMemo(() => {
-    const sel = plat.plots.find((p) => p.id === selectedId);
+    if (!focus || !selectedLotId) return null;
+    const sel = platFor(focus.id).plots.find((p) => p.id === selectedLotId);
     if (!sel) return null;
     const geo = new THREE.BoxGeometry(sel.rect.w, 0.5, sel.rect.d);
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(geo),
       new THREE.LineBasicMaterial({ color: '#ff7258' }),
     );
-    edges.position.set(sel.rect.x + sel.rect.w / 2, 0.25, sel.rect.z + sel.rect.d / 2);
+    const [wx, wz] = localToWorld(
+      focus,
+      sel.rect.x + sel.rect.w / 2,
+      sel.rect.z + sel.rect.d / 2,
+    );
+    edges.position.set(wx, 0.25, wz);
+    edges.rotation.y = focus.shape.rot;
     return edges;
-  }, [plat, selectedId]);
+  }, [focus, selectedLotId]);
 
   useEffect(() => {
     scene.background = new THREE.Color('#8fdcf6');
-    scene.fog = new THREE.FogExp2(0x8fdcf6, 0.02);
+    scene.fog = new THREE.FogExp2(0x8fdcf6, 0.0022);
   }, [scene]);
 
   useFrame(() => {
     const sky = new THREE.Color('#8fdcf6').lerp(new THREE.Color('#071d33'), night);
     scene.background = sky;
-    if (!scene.fog) scene.fog = new THREE.FogExp2(sky.getHex(), 0.02);
-    (scene.fog as THREE.FogExp2).color.copy(sky);
+    if (!scene.fog) scene.fog = new THREE.FogExp2(sky.getHex(), 0.0022);
+    const fog = scene.fog as THREE.FogExp2;
+    fog.color.copy(sky);
+    // Thin haze across the whole word, heavier when standing over one island.
+    const want = focus ? 0.011 : 0.0022;
+    fog.density += (want - fog.density) * 0.06;
 
     if (sunRef.current) {
       const arc = Math.PI * (0.2 + night * 0.64);
-      const d = Math.max(rx, rz) * 2.4;
-      sunRef.current.position.set(Math.cos(arc) * d, Math.max(3, Math.sin(arc) * d), -d * 0.5);
+      const d = 80;
+      sunRef.current.position.set(
+        (focus?.pos[0] ?? 30) + Math.cos(arc) * d,
+        Math.max(6, Math.sin(arc) * d),
+        (focus?.pos[1] ?? 0) - d * 0.4,
+      );
+      sunRef.current.target.position.set(focus?.pos[0] ?? 30, 0, focus?.pos[1] ?? 0);
+      sunRef.current.target.updateMatrixWorld();
       sunRef.current.intensity = 4.4 - night * 3.2;
     }
   });
 
-  /** Ground clicks resolve to a lot mathematically, not by raycasting each. */
+  /** One ocean-wide pick plane; islands and lots resolve mathematically. */
   const pick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    const x = e.point.x;
-    const z = e.point.z;
-    const hit = plat.plots.find(
+    const { x, z } = e.point;
+
+    const hitIsland = islands.find((i) => hitsIsland(i, x, z));
+    if (!hitIsland) {
+      onPickLot(null);
+      return;
+    }
+    if (!focus || hitIsland.id !== focus.id) {
+      onPickIsland(hitIsland);
+      return;
+    }
+
+    const [lx, lz] = worldToLocal(hitIsland, x, z);
+    const hit = platFor(hitIsland.id).plots.find(
       (p) =>
-        x >= p.rect.x &&
-        x <= p.rect.x + p.rect.w &&
-        z >= p.rect.z &&
-        z <= p.rect.z + p.rect.d,
+        lx >= p.rect.x &&
+        lx <= p.rect.x + p.rect.w &&
+        lz >= p.rect.z &&
+        lz <= p.rect.z + p.rect.d,
     );
     onPickLot(hit ?? null);
   };
 
-  const shadowSpan = Math.max(rx, rz) * 1.4;
+  // Shadows follow whatever is being looked at.
+  const span = focus ? Math.max(focus.shape.rx, focus.shape.rz) * 1.5 : 70;
 
   return (
     <>
@@ -362,30 +509,43 @@ export function IslandWorld({
       <directionalLight
         ref={sunRef}
         castShadow
-        position={[10, 16, -8]}
+        position={[40, 60, -20]}
         intensity={4.4}
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-shadowSpan}
-        shadow-camera-right={shadowSpan}
-        shadow-camera-top={shadowSpan}
-        shadow-camera-bottom={-shadowSpan}
+        shadow-camera-left={-span}
+        shadow-camera-right={span}
+        shadow-camera-top={span}
+        shadow-camera-bottom={-span}
+        shadow-camera-far={220}
         shadow-bias={-0.0006}
       />
 
-      {/* sea */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-        <planeGeometry args={[400, 400]} />
+        <planeGeometry args={[900, 900]} />
         <meshStandardMaterial color="#13a8ce" roughness={0.2} metalness={0.1} />
       </mesh>
 
-      <primitive object={terrain} />
-      <primitive object={built} />
+      <primitive object={groups} />
       {marker && <primitive object={marker} />}
 
-      {/* Invisible pick plane sitting just above the ground. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} onClick={pick} visible={false}>
-        <planeGeometry args={[rx * 2.4, rz * 2.4]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.03, 0]}
+        onClick={pick}
+        visible={false}
+      >
+        <planeGeometry args={[600, 600]} />
       </mesh>
+
+      <OrbitControls
+        ref={controls as never}
+        makeDefault
+        enablePan
+        maxPolarAngle={1.45}
+        minDistance={4}
+        maxDistance={900}
+      />
+      <CameraRig islands={islands} focus={focus} controls={controls} />
     </>
   );
 }

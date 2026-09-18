@@ -35,7 +35,7 @@ export function Nav() {
   return (
     <header className={`${styles.nav} ${solid ? styles.solid : ''}`}>
       <a className={styles.brand} href="#top">
-        <img src={asset("/assets/archipelago-logo.png")} alt="" width={34} height={34} />
+        <img src={asset("/assets/arc-mark.png")} alt="" width={36} height={36} />
         <span className={styles.brandText}>
           <span className={styles.wordmark}>
             <b>ARC</b>HIPELAGO

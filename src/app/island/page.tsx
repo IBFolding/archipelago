@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import Link from 'next/link';
 import { ISLANDS, LETTERS } from '@/lib/content';
 import { USD, askingPrice, forSaleFor, platFor, type Plot } from '@/lib/plots';
@@ -39,21 +38,34 @@ function readOwned(): Set<string> {
 }
 
 export default function IslandPage() {
-  const [islandId, setIslandId] = useState(ISLANDS[0].id);
+  // null focus means the whole archipelago is in view.
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Plot | null>(null);
   const [owned, setOwned] = useState<Set<string>>(new Set());
   const [night, setNight] = useState(0);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('i');
-    if (q && ISLANDS.some((i) => i.id === q)) setIslandId(q);
+    if (q && ISLANDS.some((i) => i.id === q)) setFocusId(q);
     setOwned(readOwned());
   }, []);
 
-  const island = ISLANDS.find((i) => i.id === islandId)!;
-  const plat = useMemo(() => platFor(islandId), [islandId]);
-  const openCount = forSaleFor(islandId).length;
-  const dist = Math.max(island.shape.rx, island.shape.rz) * 3.4;
+  const island = focusId ? (ISLANDS.find((i) => i.id === focusId) ?? null) : null;
+  const plat = useMemo(() => (focusId ? platFor(focusId) : null), [focusId]);
+  const openCount = focusId ? forSaleFor(focusId).length : 0;
+  const totalOpen = useMemo(
+    () => ISLANDS.reduce((n, i) => n + forSaleFor(i.id).length, 0),
+    [],
+  );
+  const totalLots = useMemo(
+    () => ISLANDS.reduce((n, i) => n + platFor(i.id).plots.length, 0),
+    [],
+  );
+
+  const focusIsland = (id: string | null) => {
+    setFocusId(id);
+    setSelected(null);
+  };
 
   const neighbour = selected && !owned.has(selected.id) ? neighbourFor(selected) : null;
   const isMine = selected ? owned.has(selected.id) : false;
@@ -65,22 +77,17 @@ export default function IslandPage() {
           shadows
           dpr={[1, 1.6]}
           gl={{ antialias: true }}
-          camera={{ fov: 40, position: [0, dist * 0.7, dist], near: 0.1, far: 600 }}
+          camera={{ fov: 40, position: [30, 90, 110], near: 0.1, far: 1200 }}
         >
           <Suspense fallback={null}>
             <IslandWorld
-              island={island}
+              islands={ISLANDS}
+              focusId={focusId}
               ownedIds={owned}
-              selectedId={selected?.id ?? null}
+              selectedLotId={selected?.id ?? null}
               night={night}
+              onPickIsland={(i) => focusIsland(i.id)}
               onPickLot={setSelected}
-            />
-            <OrbitControls
-              makeDefault
-              enablePan
-              maxPolarAngle={1.45}
-              minDistance={dist * 0.25}
-              maxDistance={dist * 2.2}
             />
           </Suspense>
         </Canvas>
@@ -92,19 +99,24 @@ export default function IslandPage() {
         </Link>
         <div className={styles.title}>
           <small>
-            {island.letter} section · island {island.num}
+            {island ? `${island.letter} section · island ${island.num}` : 'The ARC · 18 islands'}
           </small>
-          <strong>{island.name}</strong>
+          <strong>{island ? island.name : 'The whole archipelago'}</strong>
         </div>
         <div className={styles.counts}>
           <span>
-            <b>{plat.plots.length}</b> lots
+            <b>{island && plat ? plat.plots.length : totalLots}</b> lots
           </span>
           <span>
-            <b>{openCount}</b> for sale
+            <b>{island ? openCount : totalOpen}</b> for sale
           </span>
         </div>
         <div className={styles.topActions}>
+          {island && (
+            <button onClick={() => focusIsland(null)} className={styles.zoomOut}>
+              ⤢ All islands
+            </button>
+          )}
           <button onClick={() => setNight((n) => (n > 0.5 ? 0 : 1))}>
             {night > 0.5 ? '☀ Day' : '☾ Night'}
           </button>
@@ -123,11 +135,8 @@ export default function IslandPage() {
               {ISLANDS.filter((i) => i.letter === L.id).map((i) => (
                 <button
                   key={i.id}
-                  className={i.id === islandId ? styles.isleOn : styles.isle}
-                  onClick={() => {
-                    setIslandId(i.id);
-                    setSelected(null);
-                  }}
+                  className={i.id === focusId ? styles.isleOn : styles.isle}
+                  onClick={() => focusIsland(i.id)}
                   title={i.name}
                 >
                   {i.num}
@@ -159,7 +168,7 @@ export default function IslandPage() {
           </div>
 
           <p className={styles.spec}>
-            {selected.frontage}×{selected.depth} paces · {island.name}
+            {selected.frontage}×{selected.depth} paces · {island?.name}
           </p>
 
           {isMine ? (
@@ -202,6 +211,13 @@ export default function IslandPage() {
             </>
           )}
         </aside>
+      )}
+
+      {!island && (
+        <div className={styles.overviewHint}>
+          <strong>The ARC from above</strong>
+          <span>Click any island to drop in. {totalOpen} lots for sale across all 18.</span>
+        </div>
       )}
 
       <p className={styles.disclaimer}>

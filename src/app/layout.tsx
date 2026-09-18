@@ -11,7 +11,13 @@ export const metadata: Metadata = {
     description: 'Kick back. Relax. Let the degens cook.',
     images: [asset('/assets/hero-reference.png')],
   },
-  icons: { icon: asset('/assets/archipelago-logo.png') },
+  icons: {
+    icon: [
+      { url: asset('/favicon.ico'), sizes: 'any' },
+      { url: asset('/assets/arc-mark.png'), type: 'image/png' },
+    ],
+    apple: asset('/assets/arc-mark.png'),
+  },
 };
 
 export const viewport: Viewport = {
