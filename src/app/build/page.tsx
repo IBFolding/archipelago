@@ -31,7 +31,15 @@ import {
   type FiredEvent,
 } from '@/lib/events';
 import { ISLANDS } from '@/lib/content';
-import { BRANDABLE, CATEGORY_LABEL, KIT, KIT_BY_ID, type KitCategory } from '@/world/buildKit';
+import {
+  BRANDABLE,
+  CATEGORY_LABEL,
+  KIT,
+  KIT_BY_ID,
+  LEVEL_NAME,
+  upgradeCost,
+  type KitCategory,
+} from '@/world/buildKit';
 import styles from './build.module.css';
 
 const CATEGORIES: KitCategory[] = [
@@ -136,6 +144,22 @@ export default function BuildPage() {
       return;
     }
     setItems((prev) => prev.map((i) => (i.uid === selected.uid ? rotated : i)));
+  };
+
+  const upgradeSelected = () => {
+    if (!selected) return;
+    const item = KIT_BY_ID[selected.kitId];
+    const level = selected.level ?? 1;
+    if (!item?.maxLevel || level >= item.maxLevel) return;
+    const cost = upgradeCost(selected.kitId, level + 1);
+    if (cost > budget) {
+      setStatus('Not enough $ISLAND for that storey.');
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) => (i.uid === selected.uid ? { ...i, level: level + 1 } : i)),
+    );
+    setStatus(null);
   };
 
   const removeSelected = () => {
@@ -327,11 +351,37 @@ export default function BuildPage() {
       {selected && (
         <aside className={styles.inspector}>
           <div className={styles.inspHead}>
-            <strong>{KIT_BY_ID[selected.kitId]?.name}</strong>
+            <strong>
+              {KIT_BY_ID[selected.kitId]?.name}
+              {KIT_BY_ID[selected.kitId]?.maxLevel && (
+                <em className={styles.level}>
+                  {LEVEL_NAME[selected.level ?? 1]} · L{selected.level ?? 1}
+                </em>
+              )}
+            </strong>
             <button onClick={() => setSelectedUid(null)} aria-label="Close">
               ×
             </button>
           </div>
+
+          {(() => {
+            const item = KIT_BY_ID[selected.kitId];
+            const level = selected.level ?? 1;
+            if (!item?.maxLevel) return null;
+            if (level >= item.maxLevel) {
+              return <p className={styles.maxed}>Fully built out. Nothing left to add.</p>;
+            }
+            const cost = upgradeCost(selected.kitId, level + 1);
+            return (
+              <button
+                className={styles.upgrade}
+                onClick={upgradeSelected}
+                disabled={cost > budget}
+              >
+                Add a storey · {cost.toLocaleString()} $ISLAND
+              </button>
+            );
+          })()}
 
           <div className={styles.inspActions}>
             <button onClick={rotateSelected}>Rotate</button>

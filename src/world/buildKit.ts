@@ -18,6 +18,11 @@ export interface KitItem {
   cost: number;
   /** Footprint in paces, which is what a builder cell measures. */
   size: [number, number];
+  /**
+   * Structures grow upward rather than outward, so an upgrade never changes
+   * the footprint it was placed on. Undefined means it cannot be upgraded.
+   */
+  maxLevel?: number;
   /** Build the mesh. */
   make: () => THREE.Group;
 }
@@ -359,6 +364,7 @@ function neonSign() {
 export const KIT: KitItem[] = [
   {
     id: 'shack',
+    maxLevel: 3,
     name: 'Starter shack',
     blurb: 'One room. Technically shelter. Everyone starts here.',
     category: 'structures',
@@ -368,6 +374,7 @@ export const KIT: KitItem[] = [
   },
   {
     id: 'hut',
+    maxLevel: 3,
     name: 'Stilt hut',
     blurb: 'Raised, because the tide has opinions.',
     category: 'structures',
@@ -377,6 +384,7 @@ export const KIT: KitItem[] = [
   },
   {
     id: 'villa',
+    maxLevel: 3,
     name: 'Beach villa',
     blurb: 'Two storeys and a glass front pointed at the water.',
     category: 'structures',
@@ -386,6 +394,7 @@ export const KIT: KitItem[] = [
   },
   {
     id: 'bar',
+    maxLevel: 3,
     name: 'Beach bar',
     blurb: 'Thatch roof, long counter, questionable licensing.',
     category: 'structures',
@@ -395,6 +404,7 @@ export const KIT: KitItem[] = [
   },
   {
     id: 'tower',
+    maxLevel: 3,
     name: 'Watchtower',
     blurb: 'Spot pirates early. Or just enjoy being taller than everyone.',
     category: 'structures',
@@ -404,6 +414,7 @@ export const KIT: KitItem[] = [
   },
   {
     id: 'container',
+    maxLevel: 3,
     name: 'Container shop',
     blurb: 'Someone is running a business out of this. Possibly you.',
     category: 'structures',
@@ -542,6 +553,30 @@ export const KIT: KitItem[] = [
 export const KIT_BY_ID: Record<string, KitItem> = Object.fromEntries(
   KIT.map((k) => [k.id, k]),
 );
+
+/** Names shown as a structure grows. */
+export const LEVEL_NAME: Record<number, string> = {
+  1: 'Built',
+  2: 'Extended',
+  3: 'Landmark',
+};
+
+/** Cost of taking a piece from the level below up to this one. */
+export function upgradeCost(kitId: string, toLevel: number): number {
+  const item = KIT_BY_ID[kitId];
+  if (!item?.maxLevel || toLevel < 2 || toLevel > item.maxLevel) return 0;
+  // Each storey costs more than the last, so a landmark is a real commitment.
+  return Math.round((item.cost * (toLevel === 2 ? 0.8 : 1.6)) / 10) * 10;
+}
+
+/** Everything sunk into a piece at its current level. */
+export function totalCost(kitId: string, level = 1): number {
+  const item = KIT_BY_ID[kitId];
+  if (!item) return 0;
+  let n = item.cost;
+  for (let l = 2; l <= level; l++) n += upgradeCost(kitId, l);
+  return n;
+}
 
 /** Items that carry brandable artwork. */
 export const BRANDABLE = new Set(['billboard', 'sign', 'neon']);

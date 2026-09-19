@@ -99,6 +99,12 @@ being hand-written, and the world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **Building upgrades.** Structures grow upward through three levels — Built,
+  Extended, Landmark — paid in $ISLAND. Storeys are stacked from the piece's
+  own measured bounds, so an upgrade never outgrows the footprint it was
+  placed on, and each storey costs more than the last. A taller, richer lot is
+  also a more interesting target, which feeds straight back into the event
+  engine.
 - **One scale, end to end.** A builder cell is one pace, and a lot's grid is
   its real frontage and depth, so the builder's lot is the lot the survey sold
   you. Builds render on the island at the size they were designed, rather than

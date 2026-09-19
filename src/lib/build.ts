@@ -1,4 +1,4 @@
-import { KIT_BY_ID } from '@/world/buildKit';
+import { KIT_BY_ID, totalCost } from '@/world/buildKit';
 import type { Plot } from './plots';
 import type { EventState } from './events';
 
@@ -48,6 +48,8 @@ export interface Placed {
   z: number;
   /** Quarter turns clockwise, 0-3. */
   rot: number;
+  /** Structures grow upward; 1 unless upgraded. */
+  level?: number;
   brand?: Brand;
 }
 
@@ -105,7 +107,7 @@ export function canPlace(items: Placed[], candidate: Placed, grid: Grid): boolea
 }
 
 export function spentOf(items: Placed[]): number {
-  return items.reduce((n, i) => n + (KIT_BY_ID[i.kitId]?.cost ?? 0), 0);
+  return items.reduce((n, i) => n + totalCost(i.kitId, i.level ?? 1), 0);
 }
 
 export function uid(): string {

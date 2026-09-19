@@ -14,6 +14,12 @@ import {
 import { BRANDABLE, KIT_BY_ID } from './buildKit';
 import { MATS } from './geometry';
 
+/** Materials for the storeys an upgrade adds. */
+const MATS_UP = {
+  wall: new THREE.MeshStandardMaterial({ color: 0xfff4de, roughness: 0.85 }),
+  trim: new THREE.MeshStandardMaterial({ color: 0xa8703c, roughness: 0.85 }),
+};
+
 const CELL = 1;
 
 /** Grid cell -> world centre of a piece with the given footprint. */
@@ -32,6 +38,42 @@ export function buildPiece(p: Placed, scale = PIECE_SCALE): THREE.Group {
   if (!item) return g;
 
   const body = item.make();
+
+  // Upgrades stack storeys on top of whatever the piece already is, measured
+  // from its own bounds, so a growing structure never outgrows its footprint.
+  const level = Math.max(1, p.level ?? 1);
+  if (item.maxLevel && level > 1) {
+    const box = new THREE.Box3().setFromObject(body);
+    const size = new THREE.Vector3();
+    const centre = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(centre);
+
+    let y = box.max.y;
+    for (let l = 2; l <= level; l++) {
+      const shrink = l === 2 ? 0.82 : 0.66;
+      const h = size.y * 0.42;
+      const storey = new THREE.Mesh(
+        new THREE.BoxGeometry(size.x * shrink, h, size.z * shrink),
+        MATS_UP.wall,
+      );
+      storey.position.set(centre.x, y + h / 2, centre.z);
+      storey.castShadow = true;
+      storey.receiveShadow = true;
+      body.add(storey);
+
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(size.x * (shrink + 0.12), size.y * 0.06, size.z * (shrink + 0.12)),
+        MATS_UP.trim,
+      );
+      slab.position.set(centre.x, y + h, centre.z);
+      slab.castShadow = true;
+      body.add(slab);
+
+      y += h + size.y * 0.06;
+    }
+  }
+
   body.scale.setScalar(scale);
   g.add(body);
 

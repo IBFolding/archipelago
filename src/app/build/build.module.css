@@ -365,3 +365,45 @@
   .conditions { right: 8px; left: 8px; width: auto; top: 76px; max-height: 50vh; }
   .report { top: 70px; }
 }
+
+/* ------------------------------------------------------------- upgrades -- */
+.level {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-top: 2px;
+}
+
+.upgrade {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #01202f;
+  background: linear-gradient(180deg, var(--cyan), #14b7e0);
+  box-shadow: 0 10px 24px rgba(20, 183, 224, 0.3);
+}
+.upgrade:hover:not(:disabled) { filter: brightness(1.06); }
+.upgrade:disabled {
+  background: rgba(5, 44, 68, 0.1);
+  color: var(--ink-soft);
+  box-shadow: none;
+  cursor: default;
+}
+
+.maxed {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(25, 144, 90, 0.12);
+  color: #0d5c3a;
+  font-size: 12px;
+  font-weight: 700;
+}
