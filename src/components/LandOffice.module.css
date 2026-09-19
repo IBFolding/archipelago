@@ -132,6 +132,11 @@
 .swResale { background: #8f7cd8; }
 
 .plan {
+  /* The plat carries meaning in its colours, so keep them in high-contrast
+     and forced-colour modes rather than letting them collapse to system
+     colours — which renders the island as flat blocks. */
+  forced-color-adjust: none;
+  print-color-adjust: exact;
   width: 100%;
   height: auto;
   max-height: 62vh;

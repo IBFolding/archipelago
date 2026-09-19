@@ -19,6 +19,24 @@ import {
 import styles from './LandOffice.module.css';
 
 type Availability = 'open' | 'resale' | 'all';
+
+/**
+ * Plat colours, set as SVG attributes rather than left to CSS alone. A
+ * stylesheet that fails to apply — forced-colours mode, a styling extension,
+ * a stale cache — would otherwise drop the island to default fills.
+ */
+const PLAT_FILL = {
+  surf: '#ffffff',
+  sand: '#ffe7a3',
+  ground: '#dff0d2',
+  road: '#fdf7ea',
+  beachfront: '#ffc44d',
+  inland: '#52b978',
+  headland: '#10704a',
+  sold: '#a9b4ba',
+  resale: '#8f7cd8',
+  selected: '#ff7258',
+} as const;
 type Sort = 'price-asc' | 'price-desc' | 'size';
 
 export function LandOffice({
@@ -164,9 +182,20 @@ export function LandOffice({
               </defs>
 
               {/* surf, beach, vegetation */}
-              <ellipse rx={rx * 1.1} ry={rz * 1.1} className={styles.surf} />
-              <ellipse rx={rx * 1.02} ry={rz * 1.02} className={styles.sand} />
-              <ellipse rx={rx * 0.99} ry={rz * 0.99} className={styles.ground} />
+              <ellipse
+                rx={rx * 1.1}
+                ry={rz * 1.1}
+                fill={PLAT_FILL.surf}
+                fillOpacity={0.45}
+                className={styles.surf}
+              />
+              <ellipse rx={rx * 1.02} ry={rz * 1.02} fill={PLAT_FILL.sand} className={styles.sand} />
+              <ellipse
+                rx={rx * 0.99}
+                ry={rz * 0.99}
+                fill={PLAT_FILL.ground}
+                className={styles.ground}
+              />
 
               {/* street grid + names, clipped to the shoreline */}
               <g clipPath={`url(#isle-${islandId})`}>
@@ -177,6 +206,7 @@ export function LandOffice({
                     y={s.z}
                     width={s.w}
                     height={s.d}
+                    fill={PLAT_FILL.road}
                     className={styles.street}
                   />
                 ))}
@@ -203,6 +233,8 @@ export function LandOffice({
               <ellipse
                 rx={rx * plat.coastalR}
                 ry={rz * plat.coastalR}
+                fill="none"
+                stroke={PLAT_FILL.road}
                 className={styles.coastRoad}
               />
 
@@ -211,8 +243,16 @@ export function LandOffice({
                 const isSel = selected?.id === p.id;
                 const isHover = hoverId === p.id;
                 const dimmed = tier !== 'any' && p.tier !== tier;
+                const fill = isSel
+                  ? PLAT_FILL.selected
+                  : p.claimed
+                    ? p.resale
+                      ? PLAT_FILL.resale
+                      : PLAT_FILL.sold
+                    : PLAT_FILL[p.tier];
                 return (
                   <rect
+                    fill={fill}
                     key={p.id}
                     x={p.rect.x}
                     y={p.rect.z}
