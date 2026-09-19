@@ -7,6 +7,7 @@ import { ISLANDS, LETTERS } from '@/lib/content';
 import { USD, askingPrice, forSaleFor, platFor, type Plot } from '@/lib/plots';
 import { TIER_LABEL } from '@/lib/plots';
 import { neighbourFor } from '@/lib/neighbours';
+import { OUTLIER_BY_ID, chartedOutliers, loadFound } from '@/lib/secrets';
 import { IslandWorld } from '@/world/IslandWorld';
 import styles from './island.module.css';
 
@@ -42,15 +43,19 @@ export default function IslandPage() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Plot | null>(null);
   const [owned, setOwned] = useState<Set<string>>(new Set());
+  const [charted, setCharted] = useState<ReturnType<typeof chartedOutliers>>([]);
   const [night, setNight] = useState(0);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('i');
     if (q && ISLANDS.some((i) => i.id === q)) setFocusId(q);
     setOwned(readOwned());
+    // Uncharted islands are absent from every list until someone finds them.
+    setCharted(chartedOutliers(loadFound()));
   }, []);
 
   const island = focusId ? (ISLANDS.find((i) => i.id === focusId) ?? null) : null;
+  const outlier = focusId ? (OUTLIER_BY_ID[focusId] ?? null) : null;
   const plat = useMemo(() => (focusId ? platFor(focusId) : null), [focusId]);
   const openCount = focusId ? forSaleFor(focusId).length : 0;
   const totalOpen = useMemo(
@@ -82,11 +87,12 @@ export default function IslandPage() {
           <Suspense fallback={null}>
             <IslandWorld
               islands={ISLANDS}
+              outliers={charted}
               focusId={focusId}
               ownedIds={owned}
               selectedLotId={selected?.id ?? null}
               night={night}
-              onPickIsland={(i) => focusIsland(i.id)}
+              onPickIsland={(id) => focusIsland(id)}
               onPickLot={setSelected}
             />
           </Suspense>
@@ -99,20 +105,26 @@ export default function IslandPage() {
         </Link>
         <div className={styles.title}>
           <small>
-            {island ? `${island.letter} section · island ${island.num}` : 'The ARC · 18 islands'}
+            {island
+              ? `${island.letter} section · island ${island.num}`
+              : outlier
+                ? outlier.subtitle
+                : `The ARC · 18 islands${charted.length ? ` + ${charted.length} charted` : ''}`}
           </small>
-          <strong>{island ? island.name : 'The whole archipelago'}</strong>
+          <strong>
+            {island ? island.name : outlier ? outlier.name : 'The whole archipelago'}
+          </strong>
         </div>
-        <div className={styles.counts}>
+        {!outlier && <div className={styles.counts}>
           <span>
             <b>{island && plat ? plat.plots.length : totalLots}</b> lots
           </span>
           <span>
             <b>{island ? openCount : totalOpen}</b> for sale
           </span>
-        </div>
+        </div>}
         <div className={styles.topActions}>
-          {island && (
+          {(island || outlier) && (
             <button onClick={() => focusIsland(null)} className={styles.zoomOut}>
               ⤢ All islands
             </button>
@@ -145,6 +157,24 @@ export default function IslandPage() {
             </div>
           </div>
         ))}
+
+        {charted.length > 0 && (
+          <div className={styles.letterRow}>
+            <span className={styles.letterMark}>✦</span>
+            <div className={styles.letterIslands}>
+              {charted.map((o) => (
+                <button
+                  key={o.id}
+                  className={o.id === focusId ? styles.isleOn : styles.charted}
+                  onClick={() => focusIsland(o.id)}
+                  title={`${o.name} — charted by you`}
+                >
+                  {o.name.split(' ')[0].slice(0, 4)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
 
       <p className={styles.legend}>
@@ -213,7 +243,14 @@ export default function IslandPage() {
         </aside>
       )}
 
-      {!island && (
+      {outlier && (
+        <div className={styles.overviewHint}>
+          <strong>{outlier.name}</strong>
+          <span>{outlier.lore}</span>
+        </div>
+      )}
+
+      {!island && !outlier && (
         <div className={styles.overviewHint}>
           <strong>The ARC from above</strong>
           <span>Click any island to drop in. {totalOpen} lots for sale across all 18.</span>

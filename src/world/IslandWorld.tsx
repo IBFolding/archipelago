@@ -11,6 +11,7 @@ import { ROOF_COLORS, WALL_COLORS, neighbourFor, type Neighbour } from '@/lib/ne
 import { blobShape } from './geometry';
 import { buildPiece } from './BuildWorld';
 import { PIECE_SCALE, footprint, loadLot } from '@/lib/build';
+import type { Outlier } from '@/lib/secrets';
 
 /**
  * A whole island at survey scale: terrain, coast road, named streets, every
@@ -190,14 +191,200 @@ export function hitsIsland(island: Island, x: number, z: number) {
   return Math.hypot(lx / (island.shape.rx * 1.12), lz / (island.shape.rz * 1.12)) <= 1;
 }
 
+/**
+ * An uncharted island. No plat, no lots, no neighbours — these are places you
+ * reach, not places you own, so they are built from theme rather than survey.
+ */
+function buildOutlier(o: Outlier) {
+  const { rx, rz } = o.shape;
+  const group = new THREE.Group();
+  const rand = (() => {
+    let h = 2166136261;
+    for (let i = 0; i < o.id.length; i++) {
+      h ^= o.id.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return () => {
+      h += 0x6d2b79f5;
+      let t = h;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  })();
+
+  const PALETTE: Record<string, { sand: number; ground: number; prop: number; accent: number }> = {
+    jungle: { sand: 0xd9c98f, ground: 0x2f6b34, prop: 0x1d4a24, accent: 0x8a6b3a },
+    monkey: { sand: 0xffe7a3, ground: 0x5aa863, prop: 0xa8703c, accent: 0xffc44d },
+    wreck: { sand: 0xcfc3a0, ground: 0x7d8a76, prop: 0x4a3a2a, accent: 0x8e9aa2 },
+    void: { sand: 0xf2ece0, ground: 0xe4dccd, prop: 0x2b2b33, accent: 0xbfd9dd },
+  };
+  const pal = PALETTE[o.theme];
+
+  const sandShape = blobShape(rx * 1.1, rz * 1.1, 7, 0.8);
+  const sandGeo = new THREE.ExtrudeGeometry(sandShape, {
+    depth: 0.4,
+    bevelEnabled: true,
+    bevelSize: 0.16,
+    bevelThickness: 0.16,
+    bevelSegments: 2,
+    steps: 1,
+    curveSegments: 28,
+  });
+  sandGeo.rotateX(Math.PI / 2);
+  const sand = new THREE.Mesh(
+    sandGeo,
+    new THREE.MeshStandardMaterial({ color: pal.sand, roughness: 0.95 }),
+  );
+  sand.position.y = -0.2;
+  sand.receiveShadow = true;
+  group.add(sand);
+
+  if (o.theme !== 'void') {
+    const g2 = new THREE.CircleGeometry(1, 56);
+    g2.rotateX(-Math.PI / 2);
+    const ground = new THREE.Mesh(
+      g2,
+      new THREE.MeshStandardMaterial({ color: pal.ground, roughness: 0.96 }),
+    );
+    ground.scale.set(rx * 0.97, 1, rz * 0.97);
+    ground.position.y = 0.004;
+    ground.receiveShadow = true;
+    group.add(ground);
+  }
+
+  const geos: THREE.BufferGeometry[] = [];
+  const inside = (x: number, z: number, k = 0.8) =>
+    Math.hypot(x / (rx * k), z / (rz * k)) <= 1;
+
+  if (o.theme === 'jungle') {
+    // A ridge, then very large ferns, then bones.
+    const ridge = new THREE.ConeGeometry(Math.min(rx, rz) * 0.7, 3.4, 7);
+    ridge.translate(rx * 0.15, 1.5, -rz * 0.1);
+    geos.push(tint(ridge, pal.ground));
+    for (let i = 0; i < 90; i++) {
+      const x = (rand() - 0.5) * rx * 1.7;
+      const z = (rand() - 0.5) * rz * 1.7;
+      if (!inside(x, z)) continue;
+      const h = 0.6 + rand() * 1.5;
+      geos.push(box(0.09, h, 0.09, x, 0, z, pal.accent));
+      for (let f = 0; f < 5; f++) {
+        const a = (f / 5) * Math.PI * 2;
+        const frond = new THREE.ConeGeometry(0.16, 0.9, 4);
+        frond.rotateZ(Math.PI / 2);
+        frond.rotateY(-a);
+        frond.scale(0.7, 1, 0.3);
+        frond.translate(x + Math.cos(a) * 0.3, h, z + Math.sin(a) * 0.3);
+        geos.push(tint(frond, pal.prop));
+      }
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = (rand() - 0.5) * rx * 1.3;
+      const z = (rand() - 0.5) * rz * 1.3;
+      if (!inside(x, z, 0.7)) continue;
+      const rib = new THREE.BoxGeometry(0.1, 1.1, 0.1);
+      rib.rotateX(0.5 + rand());
+      rib.translate(x, 0.4, z);
+      geos.push(tint(rib, 0xe8e2d2));
+    }
+  }
+
+  if (o.theme === 'monkey') {
+    // A tower of stacked huts, then a shanty town of smaller ones.
+    for (let l = 0; l < 6; l++) {
+      const w = 2.2 - l * 0.3;
+      geos.push(box(w, 0.5, w, 0, l * 0.58, 0, l % 2 ? pal.prop : pal.accent));
+      geos.push(box(w * 1.2, 0.07, w * 1.2, 0, l * 0.58 + 0.5, 0, pal.prop));
+    }
+    const crown = new THREE.ConeGeometry(0.8, 1.0, 5);
+    crown.translate(0, 4.0, 0);
+    geos.push(tint(crown, pal.accent));
+    for (let i = 0; i < 40; i++) {
+      const a = rand() * Math.PI * 2;
+      const r = 0.35 + rand() * 0.55;
+      const x = Math.cos(a) * rx * r;
+      const z = Math.sin(a) * rz * r;
+      const h = 0.35 + rand() * 0.5;
+      geos.push(box(0.5, h, 0.5, x, 0, z, pal.prop));
+      const roof = new THREE.ConeGeometry(0.42, 0.3, 4);
+      roof.rotateY(Math.PI / 4);
+      roof.translate(x, h + 0.15, z);
+      geos.push(tint(roof, pal.accent));
+    }
+  }
+
+  if (o.theme === 'wreck') {
+    // A hull broken across the reef, with masts still up.
+    const hull = new THREE.CylinderGeometry(1.5, 1.0, 8.5, 9, 1, false);
+    hull.rotateZ(Math.PI / 2);
+    hull.rotateY(0.25);
+    hull.scale(1, 0.6, 1);
+    hull.translate(0, 0.5, 0);
+    geos.push(tint(hull, pal.prop));
+    const stern = new THREE.CylinderGeometry(1.1, 0.7, 3.0, 9);
+    stern.rotateZ(Math.PI / 2.4);
+    stern.translate(rx * 0.75, 0.9, rz * 0.3);
+    geos.push(tint(stern, pal.prop));
+    for (const mx of [-1.8, 0.6]) {
+      const mast = new THREE.CylinderGeometry(0.11, 0.14, 4.6, 7);
+      mast.rotateZ(0.35);
+      mast.translate(mx, 2.2, 0);
+      geos.push(tint(mast, pal.prop));
+      const spar = new THREE.BoxGeometry(0.07, 0.07, 2.4);
+      spar.translate(mx + 0.5, 3.2, 0);
+      geos.push(tint(spar, pal.accent));
+    }
+    for (let i = 0; i < 30; i++) {
+      const x = (rand() - 0.5) * rx * 1.9;
+      const z = (rand() - 0.5) * rz * 1.9;
+      if (!inside(x, z, 1.0)) continue;
+      geos.push(box(0.3 + rand() * 0.5, 0.16, 0.22, x, 0, z, pal.accent));
+    }
+  }
+
+  if (o.theme === 'void') {
+    // Nothing but a ring of pale sand and one thing that should not be here.
+    const mono = new THREE.BoxGeometry(0.7, 5.0, 0.7);
+    mono.rotateY(0.4);
+    mono.translate(0, 2.5, 0);
+    geos.push(tint(mono, pal.prop));
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2;
+      const r = 0.62;
+      geos.push(
+        box(0.22, 0.5 + (i % 3) * 0.2, 0.22, Math.cos(a) * rx * r, 0, Math.sin(a) * rz * r, pal.accent),
+      );
+    }
+  }
+
+  const merged = mergeGeometries(geos, false);
+  geos.forEach((g) => g.dispose());
+  if (merged) {
+    merged.computeVertexNormals();
+    const mesh = new THREE.Mesh(
+      merged,
+      new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }),
+    );
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  }
+
+  group.position.set(o.pos[0], 0, o.pos[1]);
+  group.rotation.y = o.shape.rot;
+  return group;
+}
+
 export interface WorldProps {
   islands: Island[];
+  /** Charted uncharted islands. Absent entirely until someone finds them. */
+  outliers: Outlier[];
   /** null shows the whole archipelago; an id flies to that island. */
   focusId: string | null;
   ownedIds: Set<string>;
   selectedLotId: string | null;
   night: number;
-  onPickIsland: (island: Island) => void;
+  onPickIsland: (id: string) => void;
   onPickLot: (plot: Plot | null) => void;
 }
 
@@ -351,8 +538,8 @@ function CameraRig({
   focus,
   controls,
 }: {
-  islands: Island[];
-  focus: Island | null;
+  islands: { pos: [number, number]; shape: Island['shape'] }[];
+  focus: { pos: [number, number]; shape: Island['shape'] } | null;
   controls: React.RefObject<{ target: THREE.Vector3; update: () => void } | null>;
 }) {
   const wanted = useRef({
@@ -441,6 +628,7 @@ function CameraRig({
 
 export function IslandWorld({
   islands,
+  outliers,
   focusId,
   ownedIds,
   selectedLotId,
@@ -452,17 +640,23 @@ export function IslandWorld({
   const sunRef = useRef<THREE.DirectionalLight>(null);
   const controls = useRef<{ target: THREE.Vector3; update: () => void } | null>(null);
 
-  const focus = islands.find((i) => i.id === focusId) ?? null;
+  const focusIslandDef = islands.find((i) => i.id === focusId) ?? null;
+  const focusOutlier = outliers.find((o) => o.id === focusId) ?? null;
+  // Both kinds frame the same way; only their contents differ.
+  const focus: { pos: [number, number]; shape: Island['shape'] } | null =
+    focusIslandDef ?? focusOutlier ?? null;
 
   // Every island is built once and reused; only ownership changes rebuild it.
   const groups = useMemo(() => {
     const g = new THREE.Group();
     islands.forEach((i) => g.add(buildIsland(i, ownedIds)));
+    outliers.forEach((o) => g.add(buildOutlier(o)));
     return g;
-  }, [islands, ownedIds]);
+  }, [islands, ownedIds, outliers]);
 
   const marker = useMemo(() => {
-    if (!focus || !selectedLotId) return null;
+    if (!focusIslandDef || !selectedLotId) return null;
+    const focus = focusIslandDef;
     const sel = platFor(focus.id).plots.find((p) => p.id === selectedLotId);
     if (!sel) return null;
     const geo = new THREE.BoxGeometry(sel.rect.w, 0.5, sel.rect.d);
@@ -478,7 +672,7 @@ export function IslandWorld({
     edges.position.set(wx, 0.25, wz);
     edges.rotation.y = focus.shape.rot;
     return edges;
-  }, [focus, selectedLotId]);
+  }, [focusIslandDef, selectedLotId]);
 
   useEffect(() => {
     scene.background = new THREE.Color('#8fdcf6');
@@ -514,13 +708,22 @@ export function IslandWorld({
     e.stopPropagation();
     const { x, z } = e.point;
 
+    const hitOutlier = outliers.find((o) =>
+      hitsIsland({ pos: o.pos, shape: o.shape } as Island, x, z),
+    );
+    if (hitOutlier) {
+      if (focusId !== hitOutlier.id) onPickIsland(hitOutlier.id);
+      else onPickLot(null);
+      return;
+    }
+
     const hitIsland = islands.find((i) => hitsIsland(i, x, z));
     if (!hitIsland) {
       onPickLot(null);
       return;
     }
-    if (!focus || hitIsland.id !== focus.id) {
-      onPickIsland(hitIsland);
+    if (focusId !== hitIsland.id) {
+      onPickIsland(hitIsland.id);
       return;
     }
 
@@ -582,7 +785,7 @@ export function IslandWorld({
         minDistance={4}
         maxDistance={900}
       />
-      <CameraRig islands={islands} focus={focus} controls={controls} />
+      <CameraRig islands={[...islands, ...outliers]} focus={focus} controls={controls} />
     </>
   );
 }

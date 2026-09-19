@@ -20,6 +20,14 @@ import {
 } from '@/lib/build';
 import { ALL_PLOTS, TIER_LABEL, type Plot } from '@/lib/plots';
 import {
+  disturbs,
+  loadFound,
+  saveFound,
+  secretUnder,
+  OUTLIER_BY_ID,
+  type Secret,
+} from '@/lib/secrets';
+import {
   EVENT_BY_ID,
   NEW_EVENT_STATE,
   advance,
@@ -65,6 +73,7 @@ export default function BuildPage() {
   const [events, setEvents] = useState<EventState>(NEW_EVENT_STATE);
   const [justFired, setJustFired] = useState<FiredEvent[]>([]);
   const [showConditions, setShowConditions] = useState(false);
+  const [discovery, setDiscovery] = useState<Secret | null>(null);
 
   // Load whichever lot the land office sent us to.
   useEffect(() => {
@@ -93,6 +102,21 @@ export default function BuildPage() {
       setEvents(state);
       if (fired.length) setJustFired(fired);
       saveLot({ lotId, items, events: state });
+    }
+
+    // Something that disturbs the ground can turn up whatever the lot has
+    // been sitting on. Nothing advertises that there is anything to find.
+    if (fired.some((f) => disturbs(f.id))) {
+      const secret = secretUnder(lotId);
+      const found = loadFound();
+      if (secret && !found.secrets.includes(secret.id)) {
+        found.secrets.push(secret.id);
+        if (secret.charts && !found.charted.includes(secret.charts)) {
+          found.charted.push(secret.charts);
+        }
+        saveFound(found);
+        setDiscovery(secret);
+      }
     }
     // Only on arrival: this is a catch-up, not a loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,6 +455,40 @@ export default function BuildPage() {
             </div>
           )}
         </aside>
+      )}
+
+      {/* A find. Deliberately not styled like the weather report. */}
+      {discovery && (
+        <div className={styles.discovery} role="status">
+          <span className={styles.discoveryKicker}>
+            {discovery.kind === 'chart'
+              ? 'Something was under your lot'
+              : discovery.kind === 'grotto'
+                ? 'The ground opened'
+                : 'You found something'}
+          </span>
+          <h2>{discovery.title}</h2>
+          <p>{discovery.copy}</p>
+
+          {discovery.charts && OUTLIER_BY_ID[discovery.charts] && (
+            <div className={styles.charted}>
+              <small>Charted</small>
+              <strong>{OUTLIER_BY_ID[discovery.charts].name}</strong>
+              <p>{OUTLIER_BY_ID[discovery.charts].lore}</p>
+            </div>
+          )}
+
+          {discovery.islandReward && (
+            <div className={styles.charted}>
+              <small>In the box</small>
+              <strong>{discovery.islandReward.toLocaleString()} $ISLAND</strong>
+            </div>
+          )}
+
+          <button onClick={() => setDiscovery(null)}>
+            {discovery.charts ? 'Put it in the boat' : 'Say nothing to anyone'}
+          </button>
+        </div>
       )}
 
       {/* What happened while you were away */}

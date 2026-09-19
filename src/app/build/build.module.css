@@ -407,3 +407,68 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+/* -------------------------------------------------------------- a find -- */
+.discovery {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  margin: auto;
+  width: min(480px, calc(100% - 28px));
+  height: fit-content;
+  display: grid;
+  gap: 10px;
+  padding: 28px;
+  border-radius: 22px;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(92, 242, 236, 0.22), transparent 60%),
+    linear-gradient(170deg, #06304d 0%, #021d31 100%);
+  border: 1px solid rgba(92, 242, 236, 0.4);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
+  animation: surface 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes surface {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.discoveryKicker {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.discovery h2 { margin: 0; font-family: var(--serif); font-size: clamp(26px, 4vw, 34px); line-height: 1.05; }
+.discovery > p { margin: 0; font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, 0.82); }
+
+.charted {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.charted small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.charted strong { display: block; font-family: var(--serif); font-size: 22px; margin-top: 2px; }
+.charted p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: rgba(255, 255, 255, 0.76); }
+
+.discovery button {
+  margin-top: 4px;
+  border: 0;
+  cursor: pointer;
+  border-radius: 14px;
+  padding: 15px;
+  font-weight: 800;
+  font-size: 15px;
+  color: #01202f;
+  background: linear-gradient(180deg, var(--cyan), #14b7e0);
+}
+.discovery button:hover { filter: brightness(1.06); }

@@ -99,6 +99,19 @@ being hand-written, and the world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **Secrets.** Twenty-two of them sit across the 1,161 lots from the first
+  day — four charts, eight grottos, ten caches — placed deterministically, so
+  the same lot holds the same thing for everyone. Nothing advertises them.
+
+  Discovery rides on the event engine rather than adding a verb: when
+  something disturbs a lot that happens to be concealing something — the
+  overgrowth takes it back, a storm opens a hole, salvage washes up — whatever
+  was under there comes up with it. A quiet week never turns anything up,
+  which is why secrets cannot be farmed.
+- **Uncharted islands.** Four of them exist in the world and are drawn nowhere:
+  not in the switcher, not the land office, not the nav. Finding a chart makes
+  one permanently present. They have no lots and nothing for sale — they are
+  places you reach, not places you own.
 - **Building upgrades.** Structures grow upward through three levels — Built,
   Extended, Landmark — paid in $ISLAND. Storeys are stacked from the piece's
   own measured bounds, so an upgrade never outgrows the footprint it was

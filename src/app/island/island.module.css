@@ -245,3 +245,21 @@
 @media (max-width: 860px) {
   .overviewHint { display: none; }
 }
+
+/* A charted island reads differently from the surveyed ones. */
+.charted {
+  min-width: 42px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(92, 242, 236, 0.55);
+  background: rgba(92, 242, 236, 0.16);
+  color: #d8fbff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.charted:hover { background: rgba(92, 242, 236, 0.3); }
+
+.overviewHint span { max-width: 52ch; }
