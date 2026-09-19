@@ -1,5 +1,6 @@
 import { KIT_BY_ID } from '@/world/buildKit';
 import type { Plot } from './plots';
+import type { EventState } from './events';
 
 /**
  * One builder cell is one pace, and a lot's grid is its real frontage and
@@ -53,6 +54,8 @@ export interface Placed {
 export interface LotState {
   lotId: string;
   items: Placed[];
+  /** What the island has been doing to this lot while you were away. */
+  events?: EventState;
 }
 
 export const DEFAULT_BRAND: Brand = {
@@ -121,7 +124,11 @@ export function loadLot(lotId: string): LotState {
     const parsed = JSON.parse(raw) as LotState;
     if (!parsed || !Array.isArray(parsed.items)) return empty;
     // Drop anything referencing a kit piece that no longer exists.
-    return { lotId, items: parsed.items.filter((i) => KIT_BY_ID[i.kitId]) };
+    return {
+      lotId,
+      items: parsed.items.filter((i) => KIT_BY_ID[i.kitId]),
+      events: parsed.events,
+    };
   } catch {
     return empty;
   }

@@ -118,9 +118,20 @@ being hand-written, and the world will subdivide land the same way.
   plat — coast road, named streets, avenues, and rectangular lots in blocks.
   Filter by land-office stock, owner resales, or everything; sort by price or
   size; claim a specific numbered address.
-- **Events.** Squalls, hurricanes, pirates, squatters, wildlife and the caldera
-  arrive on their own schedule. Each has a defence. Your build survives or
-  becomes a story.
+- **Events.** Fifteen of them, driven by what you built rather than a calendar.
+  There is no pirate season: stockpile value and pirates take an interest,
+  leave land bare and squatters move in, build tall on a headland and the wind
+  finds you. Risk is visible, timing is not.
+
+  Pressure accumulates while an event stays away and resets when it arrives,
+  so you get neither long droughts nor three hits in a row; seasons tilt the
+  odds without scheduling anything; severity sets how fast pressure builds, so
+  a squall is weekly and "the big one" is something you talk about for months.
+  Rolls are seeded per lot and tick, so reloading cannot reroll an outcome.
+
+  Not everything is a punishment — salvage washes up, the weather goes
+  glass-calm, an influencer stays. Hazards wear a lot down and wear is
+  repairable; nothing an event does will ever delete what you built.
 - **Scroll reveal.** The hero arrives over the A, then climbs and pans right as
   you scroll until the whole ARC is in frame.
 - **Live island preview.** The islands section renders the selected island in

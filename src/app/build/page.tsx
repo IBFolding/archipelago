@@ -19,6 +19,17 @@ import {
   type Placed,
 } from '@/lib/build';
 import { ALL_PLOTS, TIER_LABEL, type Plot } from '@/lib/plots';
+import {
+  EVENT_BY_ID,
+  NEW_EVENT_STATE,
+  advance,
+  exposures,
+  profileOf,
+  repairCost,
+  seasonAt,
+  type EventState,
+  type FiredEvent,
+} from '@/lib/events';
 import { ISLANDS } from '@/lib/content';
 import { BRANDABLE, CATEGORY_LABEL, KIT, KIT_BY_ID, type KitCategory } from '@/world/buildKit';
 import styles from './build.module.css';
@@ -43,6 +54,9 @@ export default function BuildPage() {
   const [night, setNight] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [events, setEvents] = useState<EventState>(NEW_EVENT_STATE);
+  const [justFired, setJustFired] = useState<FiredEvent[]>([]);
+  const [showConditions, setShowConditions] = useState(false);
 
   // Load whichever lot the land office sent us to.
   useEffect(() => {
@@ -52,11 +66,29 @@ export default function BuildPage() {
     // The builder lot is the surveyed lot, so its grid is the real frontage
     // and depth in paces.
     setPlot(ALL_PLOTS.find((p) => p.id === id) ?? null);
-    setItems(loadLot(id).items);
+    const loaded = loadLot(id);
+    setItems(loaded.items);
+    setEvents(loaded.events ?? NEW_EVENT_STATE);
     setReady(true);
   }, []);
 
   const grid = useMemo(() => gridFor(plot), [plot]);
+  const profile = useMemo(() => profileOf(items, plot), [items, plot]);
+  const risks = useMemo(() => exposures(profile), [profile]);
+  const season = seasonAt();
+
+  // Resolve whatever happened while you were away, once, on arrival.
+  useEffect(() => {
+    if (!ready) return;
+    const { state, fired } = advance(lotId, events, profile);
+    if (fired.length || state.lastTick !== events.lastTick) {
+      setEvents(state);
+      if (fired.length) setJustFired(fired);
+      saveLot({ lotId, items, events: state });
+    }
+    // Only on arrival: this is a catch-up, not a loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
   const island = plot ? ISLANDS.find((i) => i.id === plot.islandId) : null;
   const spent = useMemo(() => spentOf(items), [items]);
   const budget = START_BUDGET - spent;
@@ -141,8 +173,20 @@ export default function BuildPage() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  const repair = () => {
+    const cost = repairCost(events.condition);
+    if (cost > budget) {
+      setStatus('Not enough $ISLAND to put it right.');
+      return;
+    }
+    const next = { ...events, condition: 100 };
+    setEvents(next);
+    saveLot({ lotId, items, events: next });
+    setStatus('Repaired. Good as new, more or less.');
+  };
+
   const save = () => {
-    const ok = saveLot({ lotId, items });
+    const ok = saveLot({ lotId, items, events });
     setStatus(ok ? 'Saved to this browser.' : 'Could not save — storage is blocked here.');
   };
 
@@ -211,6 +255,12 @@ export default function BuildPage() {
           </strong>
         </div>
         <div className={styles.topActions}>
+          <button
+            onClick={() => setShowConditions((v) => !v)}
+            className={events.condition < 70 ? styles.worn : undefined}
+          >
+            ⚑ Conditions
+          </button>
           <button onClick={() => setNight((n) => (n > 0.5 ? 0 : 1))}>
             {night > 0.5 ? '☀ Day' : '☾ Night'}
           </button>
@@ -330,6 +380,79 @@ export default function BuildPage() {
               </div>
             </div>
           )}
+        </aside>
+      )}
+
+      {/* What happened while you were away */}
+      {justFired.length > 0 && (
+        <div className={styles.report} role="status">
+          <div className={styles.reportHead}>
+            <strong>While you were gone</strong>
+            <button onClick={() => setJustFired([])} aria-label="Dismiss">
+              ×
+            </button>
+          </div>
+          {justFired.slice(-4).map((f, i) => {
+            const def = EVENT_BY_ID[f.id];
+            if (!def) return null;
+            return (
+              <div key={i} className={`${styles.reportRow} ${styles[def.kind]}`}>
+                <span aria-hidden="true">{def.icon}</span>
+                <div>
+                  <b>{def.name}</b>
+                  <p>{def.copy}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Exposure readings: the risk is visible, the timing is not */}
+      {showConditions && (
+        <aside className={styles.conditions}>
+          <div className={styles.condHead}>
+            <div>
+              <small>{season.name} season</small>
+              <strong>Conditions</strong>
+            </div>
+            <button onClick={() => setShowConditions(false)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          <div className={styles.condMeter}>
+            <div className={styles.condBar}>
+              <span style={{ width: `${events.condition}%` }} />
+            </div>
+            <div className={styles.condMeterRow}>
+              <span>{Math.round(events.condition)}% condition</span>
+              {events.condition < 100 && (
+                <button onClick={repair}>
+                  Repair · {repairCost(events.condition).toLocaleString()}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <p className={styles.condNote}>
+            What you build decides what comes for you. You can read the risk; you cannot
+            read the clock.
+          </p>
+
+          <ul className={styles.riskList}>
+            {risks.slice(0, 7).map((r) => (
+              <li key={r.def.id} className={styles[r.band]}>
+                <span aria-hidden="true">{r.def.icon}</span>
+                <div>
+                  <b>{r.def.name}</b>
+                  <p>{r.def.exposure}</p>
+                </div>
+                <em>{r.band}</em>
+              </li>
+            ))}
+            {!risks.length && <li className={styles.empty}>Nothing has noticed you yet.</li>}
+          </ul>
         </aside>
       )}
 

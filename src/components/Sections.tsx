@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { EVENTS, EXCURSIONS, FAQS, REVIEWS, TREASURY, VILLAS } from '@/lib/content';
+import { EXCURSIONS, FAQS, REVIEWS, TREASURY, VILLAS } from '@/lib/content';
+import { EVENT_DEFS } from '@/lib/events';
 import { Counter, GrowBar, TiltCard, Ticker } from './Motion';
 import { Reveal, SplitHeading } from './Reveal';
 import styles from './Sections.module.css';
@@ -157,6 +158,7 @@ const SEVERITY_LABEL: Record<string, string> = {
   nuisance: 'Nuisance',
   serious: 'Serious',
   catastrophic: 'Catastrophic',
+  windfall: 'Windfall',
 };
 
 /** What the island does back to you. */
@@ -172,28 +174,30 @@ export function Events() {
             <SplitHeading text={'The island is not\na passive investment.'} />
           </div>
           <Reveal delay={120} className="lead" style={{ color: 'rgba(255,255,255,.72)' }}>
-            Weather, wildlife and other people arrive on their own schedule. Your build
-            either survives them or becomes a story. Both are content.
+            There is no pirate season. What you build decides what comes for you: stockpile
+            value and pirates take an interest, leave land bare and squatters move in, build
+            tall on a headland and the wind finds you. You can read the risk. You cannot
+            read the clock.
           </Reveal>
         </div>
 
         <div className={styles.eventGrid}>
-          {EVENTS.map((e, i) => (
-            <Reveal key={e.id} delay={i * 80}>
+          {EVENT_DEFS.map((e, i) => (
+            <Reveal key={e.id} delay={i * 60}>
              <TiltCard>
-              <article className={`${styles.event} ${styles[e.severity]}`}>
-              <div className={styles.eventTop}>
-                <span className={styles.eventIcon} aria-hidden="true">
-                  {e.icon}
-                </span>
-                <span className={styles.sev}>{SEVERITY_LABEL[e.severity]}</span>
-              </div>
-              <small>{e.frequency}</small>
-              <h3>{e.name}</h3>
-              <p>{e.copy}</p>
-              <p className={styles.defence}>
-                <b>Defence:</b> {e.defence}
-              </p>
+              <article className={`${styles.event} ${styles[e.severity]} ${styles[e.kind]}`}>
+                <div className={styles.eventTop}>
+                  <span className={styles.eventIcon} aria-hidden="true">
+                    {e.icon}
+                  </span>
+                  <span className={styles.sev}>{SEVERITY_LABEL[e.severity]}</span>
+                </div>
+                <small>{e.exposure}</small>
+                <h3>{e.name}</h3>
+                <p>{e.copy}</p>
+                <p className={styles.defence}>
+                  <b>{e.kind === 'boon' ? 'Make the most of it:' : 'Defence:'}</b> {e.defence}
+                </p>
               </article>
              </TiltCard>
             </Reveal>
