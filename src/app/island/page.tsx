@@ -8,6 +8,7 @@ import { USD, askingPrice, forSaleFor, platFor, type Plot } from '@/lib/plots';
 import { TIER_LABEL } from '@/lib/plots';
 import { neighbourFor } from '@/lib/neighbours';
 import { OUTLIER_BY_ID, chartedOutliers, loadFound } from '@/lib/secrets';
+import { STREET_NOTE, valueOf } from '@/lib/value';
 import { IslandWorld } from '@/world/IslandWorld';
 import styles from './island.module.css';
 
@@ -74,6 +75,10 @@ export default function IslandPage() {
 
   const neighbour = selected && !owned.has(selected.id) ? neighbourFor(selected) : null;
   const isMine = selected ? owned.has(selected.id) : false;
+  const market = useMemo(
+    () => (selected ? valueOf(selected, owned) : null),
+    [selected, owned],
+  );
 
   return (
     <div className={styles.page}>
@@ -200,6 +205,26 @@ export default function IslandPage() {
           <p className={styles.spec}>
             {selected.frontage}×{selected.depth} paces · {island?.name}
           </p>
+
+          {market && (
+            <div className={styles.market}>
+              <div className={styles.marketTop}>
+                <div>
+                  <small>Market value</small>
+                  <strong>{USD.format(market.value)}</strong>
+                </div>
+                {market.improvement > 0 && (
+                  <span className={styles.gain}>
+                    +{USD.format(market.improvement)} built
+                  </span>
+                )}
+              </div>
+              <div className={`${styles.street} ${styles[market.street.replace(' ', '')]}`}>
+                <b>{market.street}</b>
+                <p>{STREET_NOTE[market.street]}</p>
+              </div>
+            </div>
+          )}
 
           {isMine ? (
             <>

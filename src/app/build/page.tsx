@@ -18,7 +18,8 @@ import {
   type Brand,
   type Placed,
 } from '@/lib/build';
-import { ALL_PLOTS, TIER_LABEL, type Plot } from '@/lib/plots';
+import { ALL_PLOTS, TIER_LABEL, USD, type Plot } from '@/lib/plots';
+import { STREET_NOTE, valueOf } from '@/lib/value';
 import {
   disturbs,
   loadFound,
@@ -91,6 +92,14 @@ export default function BuildPage() {
 
   const grid = useMemo(() => gridFor(plot), [plot]);
   const profile = useMemo(() => profileOf(items, plot), [items, plot]);
+  // What this build is doing to the value of the land under it.
+  const market = useMemo(
+    () =>
+      plot
+        ? valueOf(plot, new Set([plot.id]), { items, condition: events.condition })
+        : null,
+    [plot, items, events.condition],
+  );
   const risks = useMemo(() => exposures(profile), [profile]);
   const season = seasonAt();
 
@@ -542,6 +551,42 @@ export default function BuildPage() {
               )}
             </div>
           </div>
+
+          {market && (
+            <div className={styles.valuePanel}>
+              <div className={styles.valueTop}>
+                <div>
+                  <small>Land value</small>
+                  <strong>{USD.format(market.value)}</strong>
+                </div>
+                <span className={market.value >= market.list ? styles.up : styles.down}>
+                  {market.value >= market.list ? '+' : ''}
+                  {USD.format(market.value - market.list)}
+                </span>
+              </div>
+              <dl className={styles.valueRows}>
+                <div>
+                  <dt>Bare land</dt>
+                  <dd>{USD.format(market.list)}</dd>
+                </div>
+                <div>
+                  <dt>What you built</dt>
+                  <dd>+{USD.format(market.improvement)}</dd>
+                </div>
+                <div>
+                  <dt>The street</dt>
+                  <dd>×{market.streetFactor.toFixed(2)}</dd>
+                </div>
+                <div>
+                  <dt>Condition</dt>
+                  <dd>×{market.conditionFactor.toFixed(2)}</dd>
+                </div>
+              </dl>
+              <p className={styles.valueNote}>
+                <b>{market.street}.</b> {STREET_NOTE[market.street]}
+              </p>
+            </div>
+          )}
 
           <p className={styles.condNote}>
             What you build decides what comes for you. You can read the risk; you cannot

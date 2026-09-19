@@ -472,3 +472,39 @@
   background: linear-gradient(180deg, var(--cyan), #14b7e0);
 }
 .discovery button:hover { filter: brightness(1.06); }
+
+/* --------------------------------------------------------- land value -- */
+.valuePanel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(5, 44, 68, 0.05);
+}
+.valueTop { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.valueTop small {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.valueTop strong { font-family: var(--serif); font-size: 24px; line-height: 1; }
+.up, .down {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.up { background: rgba(25, 144, 90, 0.16); color: #0d5c3a; }
+.down { background: rgba(255, 114, 88, 0.16); color: #96301c; }
+
+.valueRows { margin: 0; display: grid; gap: 3px; }
+.valueRows div { display: flex; justify-content: space-between; gap: 8px; }
+.valueRows dt { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; }
+.valueRows dd { margin: 0; font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.valueNote { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); }
+.valueNote b { text-transform: capitalize; color: var(--ink); }

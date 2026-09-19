@@ -99,6 +99,18 @@ being hand-written, and the world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **Land value.** A lot is worth more than its list price once something
+  stands on it, and the market reads three things: what you built (paid in
+  $ISLAND, which raises the dollar value of the land — the token's actual
+  job), who you are next to, and what shape the lot is in after the weather
+  has had a go.
+
+  The street factor comes from the six nearest lots, whether they are other
+  players' builds or generated neighbours, so a road where everyone has built
+  well carries a premium and a derelict two doors down drags its neighbours
+  down with it. Improvements are capped relative to the land, so you cannot
+  single-handedly turn cheap inland dirt into a mansion district — the street
+  has to come with you.
 - **Secrets.** Twenty-two of them sit across the 1,161 lots from the first
   day — four charts, eight grottos, ten caches — placed deterministically, so
   the same lot holds the same thing for everyone. Nothing advertises them.
