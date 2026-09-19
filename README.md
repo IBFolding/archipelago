@@ -99,6 +99,10 @@ being hand-written, and the world will subdivide land the same way.
   whole letterform stays in frame on a phone.
 - **Graceful degradation.** No WebGL falls back to the hero still image;
   `prefers-reduced-motion` pauses the animation loop.
+- **One scale, end to end.** A builder cell is one pace, and a lot's grid is
+  its real frontage and depth, so the builder's lot is the lot the survey sold
+  you. Builds render on the island at the size they were designed, rather than
+  standing in as a marker.
 - **The island world (`/island`).** Fly over any of the 18 islands and see the
   actual plat in 3D: terrain, coast road, named streets, every lot, and a
   building on every sold one. Click a lot to see its address, size and price,

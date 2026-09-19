@@ -1,8 +1,29 @@
 import { KIT_BY_ID } from '@/world/buildKit';
+import type { Plot } from './plots';
 
-/** The lot is a fixed grid of cells; one cell is one world unit. */
-export const GRID_W = 14;
-export const GRID_D = 18;
+/**
+ * One builder cell is one pace, and a lot's grid is its real frontage and
+ * depth. That makes the builder's lot the same lot the survey sold you, so a
+ * build can be dropped onto the island at the right size instead of living in
+ * its own private scale.
+ */
+export interface Grid {
+  w: number;
+  d: number;
+}
+
+/** The demo lot, for anyone who arrives without claiming anything. */
+export const DEMO_GRID: Grid = { w: 18, d: 25 };
+
+/**
+ * Kit geometry was authored at roughly one unit per old cell; a cell is now a
+ * pace, so pieces are scaled up to match their footprints in paces.
+ */
+export const PIECE_SCALE = 4;
+
+export function gridFor(plot: Plot | null): Grid {
+  return plot ? { w: plot.frontage, d: plot.depth } : DEMO_GRID;
+}
 
 /** Starting spend, in $ISLAND. Materials are what the token is for. */
 export const START_BUDGET = 6000;
@@ -66,14 +87,14 @@ export function cellsOf(p: Placed): string[] {
   return out;
 }
 
-export function inBounds(p: Placed): boolean {
+export function inBounds(p: Placed, grid: Grid): boolean {
   const [w, d] = footprint(p.kitId, p.rot);
-  return p.x >= 0 && p.z >= 0 && p.x + w <= GRID_W && p.z + d <= GRID_D;
+  return p.x >= 0 && p.z >= 0 && p.x + w <= grid.w && p.z + d <= grid.d;
 }
 
 /** True when a piece can sit here without overlapping anything else. */
-export function canPlace(items: Placed[], candidate: Placed): boolean {
-  if (!inBounds(candidate)) return false;
+export function canPlace(items: Placed[], candidate: Placed, grid: Grid): boolean {
+  if (!inBounds(candidate, grid)) return false;
   const taken = new Set(
     items.filter((i) => i.uid !== candidate.uid).flatMap(cellsOf),
   );

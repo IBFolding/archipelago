@@ -9,6 +9,8 @@ import type { Island } from '@/lib/content';
 import { platFor, type Plot } from '@/lib/plots';
 import { ROOF_COLORS, WALL_COLORS, neighbourFor, type Neighbour } from '@/lib/neighbours';
 import { blobShape } from './geometry';
+import { buildPiece } from './BuildWorld';
+import { PIECE_SCALE, footprint, loadLot } from '@/lib/build';
 
 /**
  * A whole island at survey scale: terrain, coast road, named streets, every
@@ -238,6 +240,8 @@ function buildIsland(island: Island, ownedIds: Set<string>) {
 
   // --- roads, pads, buildings, all merged into one mesh ---
   const geos: THREE.BufferGeometry[] = [];
+  // Player builds keep their own materials, so they sit outside the merge.
+  const built: THREE.Object3D[] = [];
 
   const SEG = 72;
   for (let i = 0; i < SEG; i++) {
@@ -283,10 +287,37 @@ function buildIsland(island: Island, ownedIds: Set<string>) {
     geos.push(tint(g, pad));
 
     if (mine) {
-      const cx = p.rect.x + p.rect.w / 2;
-      const cz = p.rect.z + p.rect.d / 2;
-      geos.push(box(0.03, 0.5, 0.03, cx, 0.02, cz, 0x04314f));
-      geos.push(box(0.2, 0.12, 0.02, cx + 0.1, 0.4, cz, PAD_MINE));
+      // Your own build, at the scale the survey sold you: one builder cell is
+      // one pace, and a pace is this much of the island.
+      const pace = p.rect.w / p.frontage;
+      const saved = loadLot(p.id).items;
+
+      for (const piece of saved) {
+        const mesh = buildPiece(piece, PIECE_SCALE * pace);
+        const [pw, pd] = footprint(piece.kitId, piece.rot);
+        mesh.position.set(
+          p.rect.x + (piece.x + pw / 2) * pace,
+          0.02,
+          p.rect.z + (piece.z + pd / 2) * pace,
+        );
+        mesh.rotation.y = (-piece.rot * Math.PI) / 2;
+        mesh.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh) {
+            m.castShadow = true;
+            m.receiveShadow = true;
+          }
+        });
+        built.push(mesh);
+      }
+
+      // An empty claimed lot still needs a marker so you can find it.
+      if (!saved.length) {
+        const cx = p.rect.x + p.rect.w / 2;
+        const cz = p.rect.z + p.rect.d / 2;
+        geos.push(box(0.03, 0.5, 0.03, cx, 0.02, cz, 0x04314f));
+        geos.push(box(0.2, 0.12, 0.02, cx + 0.1, 0.4, cz, PAD_MINE));
+      }
       continue;
     }
 
@@ -307,6 +338,8 @@ function buildIsland(island: Island, ownedIds: Set<string>) {
     group.add(mesh);
   }
 
+  built.forEach((b) => group.add(b));
+
   group.position.set(island.pos[0], 0, island.pos[1]);
   group.rotation.y = island.shape.rot;
   return group;
@@ -320,7 +353,7 @@ function CameraRig({
 }: {
   islands: Island[];
   focus: Island | null;
-  controls: React.MutableRefObject<{ target: THREE.Vector3; update: () => void } | null>;
+  controls: React.RefObject<{ target: THREE.Vector3; update: () => void } | null>;
 }) {
   const wanted = useRef({
     pos: new THREE.Vector3(),
@@ -386,10 +419,12 @@ function CameraRig({
     if (!wanted.current.settled) {
       cam.position.lerp(wanted.current.pos, k);
       const c = controls.current;
-      if (c) {
-        c.target.lerp(wanted.current.target, k);
-        c.update();
-      }
+      if (c) c.target.lerp(wanted.current.target, k);
+      // Aim the camera here rather than relying on the controls to do it:
+      // OrbitControls only re-aims on input unless damping is running, so a
+      // programmatic move can otherwise leave it staring at the horizon.
+      cam.lookAt(c ? c.target : wanted.current.target);
+      c?.update();
       if (cam.position.distanceTo(wanted.current.pos) < 0.4) {
         wanted.current.settled = true;
       }
@@ -541,6 +576,8 @@ export function IslandWorld({
         ref={controls as never}
         makeDefault
         enablePan
+        enableDamping
+        dampingFactor={0.08}
         maxPolarAngle={1.45}
         minDistance={4}
         maxDistance={900}

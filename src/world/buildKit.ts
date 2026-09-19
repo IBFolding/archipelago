@@ -16,7 +16,7 @@ export interface KitItem {
   category: KitCategory;
   /** Cost in $ISLAND. */
   cost: number;
-  /** Footprint in grid cells. */
+  /** Footprint in paces, which is what a builder cell measures. */
   size: [number, number];
   /** Build the mesh. */
   make: () => THREE.Group;
@@ -363,7 +363,7 @@ export const KIT: KitItem[] = [
     blurb: 'One room. Technically shelter. Everyone starts here.',
     category: 'structures',
     cost: 120,
-    size: [1, 1],
+    size: [4, 4],
     make: shack,
   },
   {
@@ -372,7 +372,7 @@ export const KIT: KitItem[] = [
     blurb: 'Raised, because the tide has opinions.',
     category: 'structures',
     cost: 340,
-    size: [1, 1],
+    size: [4, 4],
     make: beachHut,
   },
   {
@@ -381,7 +381,7 @@ export const KIT: KitItem[] = [
     blurb: 'Two storeys and a glass front pointed at the water.',
     category: 'structures',
     cost: 1400,
-    size: [2, 2],
+    size: [8, 8],
     make: villa,
   },
   {
@@ -390,7 +390,7 @@ export const KIT: KitItem[] = [
     blurb: 'Thatch roof, long counter, questionable licensing.',
     category: 'structures',
     cost: 900,
-    size: [2, 2],
+    size: [8, 8],
     make: beachBar,
   },
   {
@@ -399,7 +399,7 @@ export const KIT: KitItem[] = [
     blurb: 'Spot pirates early. Or just enjoy being taller than everyone.',
     category: 'structures',
     cost: 760,
-    size: [1, 1],
+    size: [4, 4],
     make: watchtower,
   },
   {
@@ -408,7 +408,7 @@ export const KIT: KitItem[] = [
     blurb: 'Someone is running a business out of this. Possibly you.',
     category: 'structures',
     cost: 520,
-    size: [2, 1],
+    size: [8, 4],
     make: containerShop,
   },
   {
@@ -417,7 +417,7 @@ export const KIT: KitItem[] = [
     blurb: 'Deep end 1.8m. Life choices deeper.',
     category: 'leisure',
     cost: 880,
-    size: [2, 2],
+    size: [8, 8],
     make: pool,
   },
   {
@@ -426,7 +426,7 @@ export const KIT: KitItem[] = [
     blurb: 'Shade, a daybed, and nowhere to be.',
     category: 'leisure',
     cost: 260,
-    size: [1, 1],
+    size: [4, 4],
     make: cabana,
   },
   {
@@ -435,7 +435,7 @@ export const KIT: KitItem[] = [
     blurb: 'Where the evening goes once the bar closes.',
     category: 'leisure',
     cost: 180,
-    size: [1, 1],
+    size: [4, 4],
     make: firePit,
   },
   {
@@ -444,7 +444,7 @@ export const KIT: KitItem[] = [
     blurb: 'Run it to the water. Sharks are a separate conversation.',
     category: 'leisure',
     cost: 300,
-    size: [1, 2],
+    size: [4, 8],
     make: dockPiece,
   },
   {
@@ -453,7 +453,7 @@ export const KIT: KitItem[] = [
     blurb: 'The whole brand, in one plant.',
     category: 'nature',
     cost: 40,
-    size: [1, 1],
+    size: [3, 3],
     make: palmSingle,
   },
   {
@@ -462,7 +462,7 @@ export const KIT: KitItem[] = [
     blurb: 'Three palms pretending they grew there naturally.',
     category: 'nature',
     cost: 100,
-    size: [1, 1],
+    size: [4, 4],
     make: palmCluster,
   },
   {
@@ -471,7 +471,7 @@ export const KIT: KitItem[] = [
     blurb: 'Load-bearing, apparently.',
     category: 'nature',
     cost: 50,
-    size: [1, 1],
+    size: [4, 4],
     make: boulder,
   },
   {
@@ -480,7 +480,7 @@ export const KIT: KitItem[] = [
     blurb: 'Greenery you did not have to negotiate with.',
     category: 'nature',
     cost: 70,
-    size: [1, 1],
+    size: [4, 4],
     make: planter,
   },
   {
@@ -489,7 +489,7 @@ export const KIT: KitItem[] = [
     blurb: 'Deters squatters. Barely. But it counts.',
     category: 'utility',
     cost: 35,
-    size: [1, 1],
+    size: [4, 4],
     make: fence,
   },
   {
@@ -498,7 +498,7 @@ export const KIT: KitItem[] = [
     blurb: 'So you stop tracking sand indoors.',
     category: 'utility',
     cost: 20,
-    size: [1, 1],
+    size: [4, 4],
     make: pathTile,
   },
   {
@@ -507,7 +507,7 @@ export const KIT: KitItem[] = [
     blurb: 'Light, atmosphere, and a modest fire risk.',
     category: 'utility',
     cost: 60,
-    size: [1, 1],
+    size: [2, 2],
     make: tikiTorch,
   },
   {
@@ -516,7 +516,7 @@ export const KIT: KitItem[] = [
     blurb: 'Put your token or your business on it. Everyone will see it.',
     category: 'signage',
     cost: 650,
-    size: [2, 1],
+    size: [10, 4],
     make: billboardFrame,
   },
   {
@@ -525,7 +525,7 @@ export const KIT: KitItem[] = [
     blurb: 'Small, tasteful, still an advert.',
     category: 'signage',
     cost: 150,
-    size: [1, 1],
+    size: [4, 4],
     make: signPost,
   },
   {
@@ -534,7 +534,7 @@ export const KIT: KitItem[] = [
     blurb: 'Glows all night. Your neighbours have feelings about it.',
     category: 'signage',
     cost: 420,
-    size: [1, 1],
+    size: [4, 4],
     make: neonSign,
   },
 ];

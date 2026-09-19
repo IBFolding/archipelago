@@ -8,10 +8,9 @@ import { BuildWorld } from '@/world/BuildWorld';
 import {
   BRAND_COLORS,
   DEFAULT_BRAND,
-  GRID_D,
-  GRID_W,
   START_BUDGET,
   canPlace,
+  gridFor,
   loadLot,
   saveLot,
   spentOf,
@@ -19,6 +18,8 @@ import {
   type Brand,
   type Placed,
 } from '@/lib/build';
+import { ALL_PLOTS, TIER_LABEL, type Plot } from '@/lib/plots';
+import { ISLANDS } from '@/lib/content';
 import { BRANDABLE, CATEGORY_LABEL, KIT, KIT_BY_ID, type KitCategory } from '@/world/buildKit';
 import styles from './build.module.css';
 
@@ -32,6 +33,7 @@ const CATEGORIES: KitCategory[] = [
 
 export default function BuildPage() {
   const [lotId, setLotId] = useState('demo');
+  const [plot, setPlot] = useState<Plot | null>(null);
   const [items, setItems] = useState<Placed[]>([]);
   const [brush, setBrush] = useState<string | null>(null);
   const [brushRot, setBrushRot] = useState(0);
@@ -47,10 +49,15 @@ export default function BuildPage() {
     const q = new URLSearchParams(window.location.search).get('lot');
     const id = q || 'demo';
     setLotId(id);
+    // The builder lot is the surveyed lot, so its grid is the real frontage
+    // and depth in paces.
+    setPlot(ALL_PLOTS.find((p) => p.id === id) ?? null);
     setItems(loadLot(id).items);
     setReady(true);
   }, []);
 
+  const grid = useMemo(() => gridFor(plot), [plot]);
+  const island = plot ? ISLANDS.find((i) => i.id === plot.islandId) : null;
   const spent = useMemo(() => spentOf(items), [items]);
   const budget = START_BUDGET - spent;
   const selected = items.find((i) => i.uid === selectedUid) ?? null;
@@ -59,8 +66,8 @@ export default function BuildPage() {
     if (!brush || !hover) return null;
     const candidate: Placed = { uid: '_ghost', kitId: brush, x: hover.x, z: hover.z, rot: brushRot };
     const affordable = (KIT_BY_ID[brush]?.cost ?? 0) <= budget;
-    return { x: hover.x, z: hover.z, ok: canPlace(items, candidate) && affordable };
-  }, [brush, hover, brushRot, items, budget]);
+    return { x: hover.x, z: hover.z, ok: canPlace(items, candidate, grid) && affordable };
+  }, [brush, hover, brushRot, items, budget, grid]);
 
   const place = useCallback(
     (x: number, z: number) => {
@@ -79,20 +86,20 @@ export default function BuildPage() {
         rot: brushRot,
         brand: BRANDABLE.has(brush) ? { ...DEFAULT_BRAND } : undefined,
       };
-      if (!canPlace(items, next)) {
+      if (!canPlace(items, next, grid)) {
         setStatus('That does not fit there.');
         return;
       }
       setItems((prev) => [...prev, next]);
       setStatus(null);
     },
-    [brush, brushRot, budget, items],
+    [brush, brushRot, budget, items, grid],
   );
 
   const rotateSelected = () => {
     if (!selected) return;
     const rotated = { ...selected, rot: (selected.rot + 1) % 4 };
-    if (!canPlace(items, rotated)) {
+    if (!canPlace(items, rotated, grid)) {
       setStatus('No room to turn that here.');
       return;
     }
@@ -152,10 +159,14 @@ export default function BuildPage() {
           shadows
           dpr={[1, 1.6]}
           gl={{ antialias: true }}
-          camera={{ fov: 42, position: [0, 17, 21], near: 0.1, far: 400 }}
+          camera={{ fov: 42, position: [0, 30, 40], near: 0.1, far: 800 }}
+          // A camera prop sets position but not orientation, and OrbitControls
+          // only re-aims on input, so point it at the lot up front.
+          onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         >
           <Suspense fallback={null}>
             <BuildWorld
+              grid={grid}
               items={items}
               selectedUid={selectedUid}
               brush={brush}
@@ -169,9 +180,11 @@ export default function BuildPage() {
             <OrbitControls
               makeDefault
               enablePan
+              enableDamping
+              dampingFactor={0.08}
               maxPolarAngle={1.42}
-              minDistance={8}
-              maxDistance={48}
+              minDistance={10}
+              maxDistance={90}
               target={[0, 0, 0]}
             />
           </Suspense>
@@ -184,8 +197,12 @@ export default function BuildPage() {
           ← ARCHipelago
         </Link>
         <div className={styles.lotName}>
-          <small>Your lot</small>
-          <strong>{lotId === 'demo' ? 'Demo lot' : lotId}</strong>
+          <small>
+            {plot && island
+              ? `${TIER_LABEL[plot.tier]} · ${island.name}`
+              : 'Demo lot'}
+          </small>
+          <strong>{plot ? plot.address : `${grid.w}×${grid.d} paces`}</strong>
         </div>
         <div className={styles.budget}>
           <small>Balance</small>
@@ -318,7 +335,7 @@ export default function BuildPage() {
 
       {ready && !items.length && (
         <div className={styles.empty}>
-          <strong>Bare sand, {GRID_W}×{GRID_D} paces.</strong>
+          <strong>Bare sand, {grid.w}×{grid.d} paces.</strong>
           <span>Pick something from the kit and put it somewhere.</span>
         </div>
       )}
