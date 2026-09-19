@@ -71,6 +71,56 @@ const M = {
   container: new THREE.MeshStandardMaterial({ color: 0xd4663f, roughness: 0.7 }),
 };
 
+/** Dark recess used for windows and doorways. */
+const OPENING = new THREE.MeshStandardMaterial({
+  color: 0x2b4a5c,
+  roughness: 0.25,
+  metalness: 0.2,
+});
+
+/**
+ * Punches a band of windows into each face of a box. Recessing glazing and
+ * letting a roof overhang it is most of what separates a low-poly building
+ * from a crate with a lid.
+ */
+function windows(
+  g: THREE.Group,
+  w: number,
+  h: number,
+  d: number,
+  y: number,
+  count = 3,
+) {
+  const winW = (w / count) * 0.5;
+  const winH = h * 0.4;
+  const t = 0.02;
+  for (let i = 0; i < count; i++) {
+    const x = -w / 2 + (w / count) * (i + 0.5);
+    for (const sz of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(winW, winH, t), OPENING);
+      m.position.set(x, y, (sz * d) / 2);
+      g.add(m);
+    }
+  }
+  for (let i = 0; i < Math.max(1, count - 1); i++) {
+    const z = -d / 2 + (d / Math.max(1, count - 1)) * (i + 0.5);
+    for (const sx of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(t, winH, winW), OPENING);
+      m.position.set((sx * w) / 2, y, z);
+      g.add(m);
+    }
+  }
+}
+
+/** Overhanging eave, the cheapest way to make a roof look designed. */
+function eave(g: THREE.Group, w: number, d: number, y: number, mat: THREE.Material) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), mat);
+  m.position.y = y;
+  m.castShadow = true;
+  m.receiveShadow = true;
+  g.add(m);
+}
+
 function mesh(g: THREE.BufferGeometry, m: THREE.Material, y = 0) {
   const o = new THREE.Mesh(g, m);
   o.position.y = y;
@@ -84,11 +134,17 @@ function mesh(g: THREE.BufferGeometry, m: THREE.Material, y = 0) {
 function shack() {
   const g = new THREE.Group();
   g.add(mesh(new THREE.BoxGeometry(0.9, 0.62, 0.8), M.plaster, 0.31));
-  const roof = mesh(new THREE.ConeGeometry(0.78, 0.44, 4), M.thatch, 0.83);
+  windows(g, 0.9, 0.62, 0.8, 0.42, 2);
+  eave(g, 1.04, 0.94, 0.63, M.teak);
+  const roof = mesh(new THREE.ConeGeometry(0.8, 0.44, 4), M.thatch, 0.65);
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
-  const door = mesh(new THREE.BoxGeometry(0.26, 0.4, 0.04), M.darkwood, 0.2);
-  door.position.z = 0.41;
+  // Recessed doorway with a frame around it.
+  const frame = mesh(new THREE.BoxGeometry(0.34, 0.46, 0.05), M.darkwood, 0.23);
+  frame.position.z = 0.4;
+  g.add(frame);
+  const door = mesh(new THREE.BoxGeometry(0.24, 0.38, 0.06), OPENING, 0.19);
+  door.position.z = 0.42;
   g.add(door);
   return g;
 }
@@ -103,7 +159,16 @@ function beachHut() {
   }
   g.add(mesh(new THREE.BoxGeometry(1.05, 0.08, 0.9), M.teak, 0.46));
   g.add(mesh(new THREE.BoxGeometry(0.92, 0.6, 0.78), M.plaster, 0.8));
-  const roof = mesh(new THREE.ConeGeometry(0.84, 0.4, 4), M.thatch, 1.3);
+  windows(g, 0.92, 0.6, 0.78, 0.92, 2);
+  // Veranda rail along the front of the deck.
+  for (let i = 0; i < 5; i++) {
+    const p = mesh(new THREE.BoxGeometry(0.03, 0.18, 0.03), M.darkwood, 0.59);
+    p.position.set(-0.4 + i * 0.2, 0.59, 0.44);
+    g.add(p);
+  }
+  g.add(mesh(new THREE.BoxGeometry(0.94, 0.03, 0.03), M.darkwood, 0.68)).position.z = 0.44;
+  eave(g, 1.12, 0.98, 1.1, M.teak);
+  const roof = mesh(new THREE.ConeGeometry(0.86, 0.4, 4), M.thatch, 1.12);
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
   return g;
@@ -112,12 +177,26 @@ function beachHut() {
 function villa() {
   const g = new THREE.Group();
   g.add(mesh(new THREE.BoxGeometry(1.9, 0.78, 1.5), M.plaster, 0.39));
-  g.add(mesh(new THREE.BoxGeometry(1.1, 0.7, 1.1), M.plaster, 1.13));
-  const roof = mesh(new THREE.BoxGeometry(2.05, 0.1, 1.65), M.teak, 0.83);
-  g.add(roof);
-  g.add(mesh(new THREE.BoxGeometry(1.2, 0.08, 1.2), M.teak, 1.52));
+  windows(g, 1.9, 0.78, 1.5, 0.5, 4);
+
+  // Deep eave over the ground floor, which also reads as a veranda roof.
+  eave(g, 2.18, 1.78, 0.8, M.teak);
+
+  // Veranda posts under the overhang.
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const p = mesh(new THREE.BoxGeometry(0.06, 0.78, 0.06), M.teak, 0.39);
+      p.position.set(sx * 1.02, 0.39, sz * 0.83);
+      g.add(p);
+    }
+  }
+
+  g.add(mesh(new THREE.BoxGeometry(1.1, 0.7, 1.1), M.plaster, 0.85));
+  windows(g, 1.1, 0.7, 1.1, 1.0, 2);
+  eave(g, 1.34, 1.34, 1.57, M.teak);
+
   // Glass frontage facing the water.
-  const win = mesh(new THREE.BoxGeometry(1.5, 0.46, 0.04), M.glass, 0.42);
+  const win = mesh(new THREE.BoxGeometry(1.5, 0.5, 0.05), M.glass, 0.42);
   win.position.z = 0.76;
   g.add(win);
   return g;
@@ -134,9 +213,16 @@ function beachBar() {
     p.position.set(x, 0.5, z);
     g.add(p);
   }
-  const roof = mesh(new THREE.ConeGeometry(1.35, 0.44, 4), M.thatch, 1.2);
+  eave(g, 2.1, 1.7, 1.02, M.teak);
+  const roof = mesh(new THREE.ConeGeometry(1.4, 0.46, 4), M.thatch, 1.05);
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
+  // Bar front panelling, so the counter is not one flat slab.
+  for (let i = 0; i < 6; i++) {
+    const slat = mesh(new THREE.BoxGeometry(0.03, 0.46, 0.02), M.teak, 0.35);
+    slat.position.set(-0.6 + i * 0.24, 0.35, 0.16);
+    g.add(slat);
+  }
   // Bottles
   for (let i = 0; i < 5; i++) {
     const b = mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.16, 6), M.glass, 0.68);

@@ -17,8 +17,114 @@ import { MATS } from './geometry';
 /** Materials for the storeys an upgrade adds. */
 const MATS_UP = {
   wall: new THREE.MeshStandardMaterial({ color: 0xfff4de, roughness: 0.85 }),
-  trim: new THREE.MeshStandardMaterial({ color: 0xa8703c, roughness: 0.85 }),
+  wallAlt: new THREE.MeshStandardMaterial({ color: 0xf6e7cd, roughness: 0.9 }),
+  trim: new THREE.MeshStandardMaterial({ color: 0xa8703c, roughness: 0.8 }),
+  beam: new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 0.85 }),
+  glass: new THREE.MeshStandardMaterial({
+    color: 0x2b5f77,
+    roughness: 0.15,
+    metalness: 0.3,
+  }),
 };
+
+function part(
+  geo: THREE.BufferGeometry,
+  mat: THREE.Material,
+  x: number,
+  y: number,
+  z: number,
+) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+/**
+ * A proper storey rather than a stacked box: inset walls, a window band on
+ * each face, an overhanging eave, and corner posts. The overhang and the
+ * recessed glazing are what stop low-poly geometry reading as a crate.
+ */
+function storey(
+  w: number,
+  d: number,
+  h: number,
+  y: number,
+  centre: THREE.Vector3,
+  alt: boolean,
+) {
+  const g = new THREE.Group();
+  const wall = alt ? MATS_UP.wallAlt : MATS_UP.wall;
+
+  g.add(part(new THREE.BoxGeometry(w, h, d), wall, centre.x, y + h / 2, centre.z));
+
+  // Window band, recessed slightly into each face.
+  const winH = h * 0.36;
+  const winY = y + h * 0.58;
+  const inset = 0.015;
+  const bandX = new THREE.BoxGeometry(w * 0.66, winH, inset);
+  const bandZ = new THREE.BoxGeometry(inset, winH, d * 0.66);
+  g.add(part(bandX, MATS_UP.glass, centre.x, winY, centre.z + d / 2));
+  g.add(part(bandX, MATS_UP.glass, centre.x, winY, centre.z - d / 2));
+  g.add(part(bandZ, MATS_UP.glass, centre.x + w / 2, winY, centre.z));
+  g.add(part(bandZ, MATS_UP.glass, centre.x - w / 2, winY, centre.z));
+
+  // Corner posts, which give the silhouette some structure.
+  const postGeo = new THREE.BoxGeometry(w * 0.07, h, d * 0.07);
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      g.add(
+        part(
+          postGeo,
+          MATS_UP.beam,
+          centre.x + (sx * w) / 2,
+          y + h / 2,
+          centre.z + (sz * d) / 2,
+        ),
+      );
+    }
+  }
+
+  // Overhanging eave — the single biggest thing that reads as architecture.
+  g.add(
+    part(
+      new THREE.BoxGeometry(w * 1.22, h * 0.09, d * 1.22),
+      MATS_UP.trim,
+      centre.x,
+      y + h + h * 0.045,
+      centre.z,
+    ),
+  );
+
+  return { group: g, top: y + h + h * 0.09 };
+}
+
+/** Railing around a roof terrace, so the top floor is a place not a lid. */
+function railing(w: number, d: number, y: number, centre: THREE.Vector3) {
+  const g = new THREE.Group();
+  const postGeo = new THREE.BoxGeometry(w * 0.035, w * 0.12, w * 0.035);
+  const n = 5;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n - 0.5;
+    for (const sz of [-1, 1]) {
+      g.add(part(postGeo, MATS_UP.beam, centre.x + t * w, y + w * 0.06, centre.z + (sz * d) / 2));
+    }
+    for (const sx of [-1, 1]) {
+      g.add(part(postGeo, MATS_UP.beam, centre.x + (sx * w) / 2, y + w * 0.06, centre.z + t * d));
+    }
+  }
+  // Top rail on each side.
+  const railX = new THREE.BoxGeometry(w * 1.02, w * 0.022, w * 0.03);
+  const railZ = new THREE.BoxGeometry(w * 0.03, w * 0.022, d * 1.02);
+  for (const sz of [-1, 1]) {
+    g.add(part(railX, MATS_UP.trim, centre.x, y + w * 0.12, centre.z + (sz * d) / 2));
+  }
+  for (const sx of [-1, 1]) {
+    g.add(part(railZ, MATS_UP.trim, centre.x + (sx * w) / 2, y + w * 0.12, centre.z));
+  }
+  return g;
+}
 
 const CELL = 1;
 
@@ -50,28 +156,23 @@ export function buildPiece(p: Placed, scale = PIECE_SCALE): THREE.Group {
     box.getCenter(centre);
 
     let y = box.max.y;
+    let lastW = size.x;
+    let lastD = size.z;
+
     for (let l = 2; l <= level; l++) {
-      const shrink = l === 2 ? 0.82 : 0.66;
-      const h = size.y * 0.42;
-      const storey = new THREE.Mesh(
-        new THREE.BoxGeometry(size.x * shrink, h, size.z * shrink),
-        MATS_UP.wall,
-      );
-      storey.position.set(centre.x, y + h / 2, centre.z);
-      storey.castShadow = true;
-      storey.receiveShadow = true;
-      body.add(storey);
-
-      const slab = new THREE.Mesh(
-        new THREE.BoxGeometry(size.x * (shrink + 0.12), size.y * 0.06, size.z * (shrink + 0.12)),
-        MATS_UP.trim,
-      );
-      slab.position.set(centre.x, y + h, centre.z);
-      slab.castShadow = true;
-      body.add(slab);
-
-      y += h + size.y * 0.06;
+      const shrink = l === 2 ? 0.84 : 0.7;
+      const w = size.x * shrink;
+      const d = size.z * shrink;
+      const h = size.y * 0.46;
+      const built = storey(w, d, h, y, centre, l % 2 === 0);
+      body.add(built.group);
+      y = built.top;
+      lastW = w;
+      lastD = d;
     }
+
+    // The final storey gets a railed terrace rather than a flat lid.
+    body.add(railing(lastW * 0.9, lastD * 0.9, y, centre));
   }
 
   body.scale.setScalar(scale);
