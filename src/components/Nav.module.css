@@ -115,3 +115,9 @@
   .burger { display: flex; }
   .cta { display: none; }
 }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .nav { background: rgba(2, 30, 48, 0.94); }
+  .links { background: #021e30; }
+}

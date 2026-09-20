@@ -275,3 +275,10 @@
   .phase { flex-direction: row; top: 92px; right: 12px; }
   .phase button { padding: 5px 8px; font-size: 9px; }
 }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .booking { background: #fff; }
+  .secondary { background: rgba(255, 255, 255, 0.3); }
+  .phase { background: #04314f; }
+}

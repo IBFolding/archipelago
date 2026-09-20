@@ -508,3 +508,9 @@
 
 .valueNote { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); }
 .valueNote b { text-transform: capitalize; color: var(--ink); }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .topbar, .status, .report, .empty { background: #043352; }
+  .palette, .inspector, .conditions { background: #fffcf5; }
+}

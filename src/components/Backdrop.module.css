@@ -34,6 +34,15 @@
   opacity: 0.72;
   will-change: transform;
 }
+
+/*
+ * These only work as atmosphere because they are blurred to nothing. Without
+ * blur they are hard-edged circles the size of half the viewport, so if the
+ * browser cannot blur them they should not exist.
+ */
+@supports not (filter: blur(4px)) {
+  .blob, .sun { display: none; }
+}
 .b1 {
   width: 46vw;
   height: 46vw;

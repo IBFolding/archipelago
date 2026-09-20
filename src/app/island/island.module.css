@@ -308,3 +308,9 @@
 .steady { border-left-color: var(--ink-soft); }
 .improving { border-left-color: var(--mango); }
 .soughtafter { border-left-color: var(--leaf); background: rgba(25, 144, 90, 0.08); }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .topbar, .switcher, .legend { background: #043352; }
+  .inspector { background: #fffcf5; }
+}

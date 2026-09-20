@@ -96,3 +96,8 @@
   box-shadow: 0 12px 30px rgba(20, 183, 224, 0.34);
 }
 .startBuilding:hover { filter: brightness(1.05); }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .backdrop { background: rgba(2, 24, 40, 0.86); }
+}

@@ -627,3 +627,10 @@
 .event.boon { background: rgba(58, 212, 106, 0.09); }
 .event.windfall { border-top-color: #3ad46a; }
 .event small { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,.62); line-height: 1.4; }
+
+
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .villa, .exc, .faq details { background: #fff; }
+  .stat { background: #fff; }
+  .quotes blockquote { background: #fff6e4; }
+}

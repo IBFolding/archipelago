@@ -22,6 +22,28 @@
         "3211"
       ],
       "port": 3211
+    },
+    {
+      "name": "greenwood",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Volumes/CODEX PROJECTS/Greenwood",
+        "run",
+        "dev"
+      ],
+      "port": 3211
+    },
+    {
+      "name": "greenwood-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "serve",
+        "/Volumes/CODEX PROJECTS/Greenwood/out",
+        "-l",
+        "3212"
+      ],
+      "port": 3212
     }
   ]
 }

@@ -384,3 +384,13 @@
   white-space: nowrap;
 }
 .open3d:hover { background: rgba(10, 107, 164, 0.2); }
+
+
+/* Without backdrop-filter these panels stay translucent and the page
+   atmosphere shows through them as large coloured shapes. */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .section { background: #fff8eb; }
+  .tab, .tabOn { background: #fff; }
+  .tabOn { background: var(--ink); }
+  .listPane .list { background: #fff; }
+}
